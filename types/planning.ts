@@ -1,4 +1,16 @@
-export const ITEM_COLORS = ["blue", "purple", "orange", "green", "gold", "pink", "teal"] as const;
+export const ITEM_COLORS = [
+  "blue",
+  "blue-dark",
+  "purple",
+  "purple-dark",
+  "orange",
+  "green",
+  "green-dark",
+  "gold",
+  "gold-dark",
+  "pink",
+  "teal",
+] as const;
 
 export type ItemColor = (typeof ITEM_COLORS)[number];
 

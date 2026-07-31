@@ -29,6 +29,16 @@ const ITEM_HEIGHT = 56;
 const ITEM_GAP = 6;
 const ROW_HEIGHT = ITEM_HEIGHT + ITEM_GAP;
 const LOAD_MORE_WIDTH = 140;
+// Visual-only breathing room between blocks on the same row. Insets the
+// rendered box symmetrically; the underlying quarter-day start/end (and thus
+// drag/resize snapping) is untouched.
+const H_GAP = 6;
+const H_GAP_MIN_WIDTH = 10;
+
+function insetRect(left: number, width: number): { left: number; width: number } {
+  const inset = Math.min(H_GAP / 2, Math.max(width - H_GAP_MIN_WIDTH, 0) / 2);
+  return { left: left + inset, width: width - inset * 2 };
+}
 // Mirrors $month-label-height + $column-header-height in styles/_variables.scss.
 const HEADER_HEIGHT = 48 + 88;
 
@@ -414,30 +424,38 @@ export default function Timeline() {
             const s = preview ? preview.startIndex : startIndex;
             const e = preview ? preview.endIndex : endIndex;
             const l = preview ? preview.lane : lane;
+            const rect = insetRect(s * quarterWidth, (e - s + 1) * quarterWidth);
             return (
               <ItemBlock
                 key={item.id}
                 item={item}
                 editable={editMode}
                 isDragging={!!preview}
-                left={s * quarterWidth}
-                width={(e - s + 1) * quarterWidth}
+                left={rect.left}
+                width={rect.width}
                 top={l * ROW_HEIGHT + ITEM_GAP}
                 onDragStart={handleItemDragStart}
               />
             );
           })}
 
-          {creatingDraft && (
-            <div
-              className={`${itemBlockStyles.item} ${itemBlockStyles.draft}`}
-              style={{
-                left: creatingDraft.startIndex * quarterWidth,
-                width: (creatingDraft.endIndex - creatingDraft.startIndex + 1) * quarterWidth,
-                top: creatingDraft.lane * ROW_HEIGHT + ITEM_GAP,
-              }}
-            />
-          )}
+          {creatingDraft &&
+            (() => {
+              const rect = insetRect(
+                creatingDraft.startIndex * quarterWidth,
+                (creatingDraft.endIndex - creatingDraft.startIndex + 1) * quarterWidth
+              );
+              return (
+                <div
+                  className={`${itemBlockStyles.item} ${itemBlockStyles.draft}`}
+                  style={{
+                    left: rect.left,
+                    width: rect.width,
+                    top: creatingDraft.lane * ROW_HEIGHT + ITEM_GAP,
+                  }}
+                />
+              );
+            })()}
 
           <button
             type="button"
