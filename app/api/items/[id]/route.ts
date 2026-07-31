@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { isAuthorized } from "@/lib/auth";
 import { getPlanningData, savePlanningData } from "@/lib/blobStore";
 import { isValidRange } from "@/lib/dates";
-import { ITEM_COLORS, type UpdateItemInput } from "@/types/planning";
+import { ITEM_COLORS, QUARTERS_PER_DAY, type UpdateItemInput } from "@/types/planning";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -23,12 +23,19 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
 
   const nextStartDate = typeof body.startDate === "string" ? body.startDate : item.startDate;
   const nextEndDate = typeof body.endDate === "string" ? body.endDate : item.endDate;
-  if (!isValidRange(nextStartDate, nextEndDate)) {
+  // Legacy items predating quarter-day snapping have no offset fields; default to full-day.
+  const nextStartOffset =
+    typeof body.startOffset === "number" ? body.startOffset : (item.startOffset ?? 0);
+  const nextEndOffset =
+    typeof body.endOffset === "number" ? body.endOffset : (item.endOffset ?? QUARTERS_PER_DAY - 1);
+  if (!isValidRange(nextStartDate, nextStartOffset, nextEndDate, nextEndOffset)) {
     return NextResponse.json({ error: "Invalid date range" }, { status: 400 });
   }
 
   item.startDate = nextStartDate;
   item.endDate = nextEndDate;
+  item.startOffset = nextStartOffset;
+  item.endOffset = nextEndOffset;
   if (typeof body.title === "string") item.title = body.title.slice(0, 80);
   if (typeof body.subtitle === "string") item.subtitle = body.subtitle.slice(0, 120);
   if (typeof body.color === "string" && (ITEM_COLORS as readonly string[]).includes(body.color)) {

@@ -11,7 +11,7 @@ import {
   toISODate,
 } from "@/lib/dates";
 import { assignLanes } from "@/lib/lanePacking";
-import type { ItemColor, TimelineItem } from "@/types/planning";
+import { QUARTERS_PER_DAY, type ItemColor, type TimelineItem } from "@/types/planning";
 import EditModeToggle from "@/components/EditModeToggle";
 import DayColumn from "./DayColumn";
 import MonthLabel from "./MonthLabel";
@@ -29,16 +29,18 @@ const MIN_LANES = 6;
 const ITEM_HEIGHT = 56;
 const ITEM_GAP = 6;
 const LOAD_MORE_WIDTH = 140;
+// Mirrors $month-label-height + $column-header-height in styles/_variables.scss.
+const HEADER_HEIGHT = 48 + 88;
 
 interface DraftRange {
-  startIndex: number;
-  endIndex: number;
+  startIndex: number; // quarter-day index
+  endIndex: number; // quarter-day index, inclusive
 }
 
 interface DragState {
   mode: DragMode | "create";
   itemId?: string;
-  anchorIndex: number;
+  anchorIndex: number; // quarter-day index
   originStart: number;
   originEnd: number;
   currentStart?: number;
@@ -52,6 +54,7 @@ export default function Timeline() {
   const [monthsForward, setMonthsForward] = useState(INITIAL_MONTHS_FORWARD);
   const [dayWidth, setDayWidth] = useState(120);
   const [dayWidthReady, setDayWidthReady] = useState(false);
+  const [viewportHeight, setViewportHeight] = useState(0);
   const [creatingDraft, setCreatingDraft] = useState<DraftRange | null>(null);
   const [editingItem, setEditingItem] = useState<TimelineItem | null>(null);
   const [dragPreview, setDragPreview] = useState<{
@@ -73,6 +76,15 @@ export default function Timeline() {
     setDayWidthReady(true);
     mq.addEventListener("change", update);
     return () => mq.removeEventListener("change", update);
+  }, []);
+
+  useEffect(() => {
+    function updateHeight() {
+      if (scrollRef.current) setViewportHeight(scrollRef.current.clientHeight);
+    }
+    updateHeight();
+    window.addEventListener("resize", updateHeight);
+    return () => window.removeEventListener("resize", updateHeight);
   }, []);
 
   useEffect(() => {
@@ -102,12 +114,26 @@ export default function Timeline() {
   }, [weekIndices, dayWidth]);
 
   const totalWidth = days.length * dayWidth;
+  const quarterWidth = dayWidth / QUARTERS_PER_DAY;
+  const totalQuarters = days.length * QUARTERS_PER_DAY;
+
+  function quarterIndexOf(dateISO: string, offset: number): number | undefined {
+    const dIdx = dayIndex.get(dateISO);
+    return dIdx === undefined ? undefined : dIdx * QUARTERS_PER_DAY + offset;
+  }
+
+  function quarterToDateOffset(q: number): { date: string; offset: number } {
+    const clamped = Math.min(Math.max(q, 0), totalQuarters - 1);
+    const dIdx = Math.floor(clamped / QUARTERS_PER_DAY);
+    return { date: toISODate(days[dIdx]), offset: clamped % QUARTERS_PER_DAY };
+  }
 
   const positioned = useMemo(() => {
     const withIndices = items
       .map((item) => {
-        const startIndex = dayIndex.get(item.startDate);
-        const endIndex = dayIndex.get(item.endDate);
+        // Legacy items predating quarter-day snapping have no offset fields; default to full-day.
+        const startIndex = quarterIndexOf(item.startDate, item.startOffset ?? 0);
+        const endIndex = quarterIndexOf(item.endDate, item.endOffset ?? QUARTERS_PER_DAY - 1);
         if (startIndex === undefined || endIndex === undefined) return null;
         return { item, startIndex, endIndex };
       })
@@ -123,10 +149,14 @@ export default function Timeline() {
       endIndex,
       lane: lanes.get(item.id) ?? 0,
     }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items, dayIndex]);
 
   const totalLanes = Math.max(MIN_LANES, ...positioned.map((p) => p.lane + 1));
-  const bodyHeight = totalLanes * (ITEM_HEIGHT + ITEM_GAP) + ITEM_GAP;
+  const bodyHeight = Math.max(
+    totalLanes * (ITEM_HEIGHT + ITEM_GAP) + ITEM_GAP,
+    viewportHeight - HEADER_HEIGHT
+  );
 
   useEffect(() => {
     if (!dayWidthReady || hasScrolledRef.current) return;
@@ -145,18 +175,18 @@ export default function Timeline() {
     });
   }
 
-  function indexFromClientX(clientX: number): number {
+  function quarterFromClientX(clientX: number): number {
     const body = bodyRef.current;
     if (!body) return 0;
     const rect = body.getBoundingClientRect();
-    const idx = Math.floor((clientX - rect.left) / dayWidth);
-    return Math.min(Math.max(idx, 0), days.length - 1);
+    const idx = Math.floor((clientX - rect.left) / quarterWidth);
+    return Math.min(Math.max(idx, 0), totalQuarters - 1);
   }
 
   function handleWindowPointerMove(e: PointerEvent) {
     const drag = dragStateRef.current;
     if (!drag) return;
-    const idx = indexFromClientX(e.clientX);
+    const idx = quarterFromClientX(e.clientX);
     if (idx !== drag.anchorIndex) drag.moved = true;
 
     if (drag.mode === "create") {
@@ -169,14 +199,14 @@ export default function Timeline() {
     const delta = idx - drag.anchorIndex;
     const duration = drag.originEnd - drag.originStart;
     if (drag.mode === "move") {
-      const newStart = Math.min(Math.max(drag.originStart + delta, 0), days.length - 1 - duration);
+      const newStart = Math.min(Math.max(drag.originStart + delta, 0), totalQuarters - 1 - duration);
       drag.currentStart = newStart;
       drag.currentEnd = newStart + duration;
     } else if (drag.mode === "resize-start") {
       drag.currentStart = Math.min(Math.max(drag.originStart + delta, 0), drag.originEnd);
       drag.currentEnd = drag.originEnd;
     } else {
-      drag.currentEnd = Math.max(Math.min(drag.originEnd + delta, days.length - 1), drag.originStart);
+      drag.currentEnd = Math.max(Math.min(drag.originEnd + delta, totalQuarters - 1), drag.originStart);
       drag.currentStart = drag.originStart;
     }
     setDragPreview({ itemId: drag.itemId!, startIndex: drag.currentStart, endIndex: drag.currentEnd });
@@ -212,19 +242,21 @@ export default function Timeline() {
 
     if (start === drag.originStart && end === drag.originEnd) return;
 
-    const startDate = toISODate(days[start]);
-    const endDate = toISODate(days[end]);
-    setItems((prev) => prev.map((i) => (i.id === itemId ? { ...i, startDate, endDate } : i)));
+    const { date: startDate, offset: startOffset } = quarterToDateOffset(start);
+    const { date: endDate, offset: endOffset } = quarterToDateOffset(end);
+    setItems((prev) =>
+      prev.map((i) => (i.id === itemId ? { ...i, startDate, startOffset, endDate, endOffset } : i))
+    );
     fetch(`/api/items/${itemId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ startDate, endDate }),
+      body: JSON.stringify({ startDate, startOffset, endDate, endOffset }),
     }).catch(() => {});
   }
 
   function handleBodyPointerDown(e: ReactPointerEvent<HTMLDivElement>) {
     if (!editMode) return;
-    const idx = indexFromClientX(e.clientX);
+    const idx = quarterFromClientX(e.clientX);
     dragStateRef.current = {
       mode: "create",
       anchorIndex: idx,
@@ -240,10 +272,10 @@ export default function Timeline() {
   function handleItemDragStart(item: TimelineItem, mode: DragMode, e: ReactPointerEvent) {
     e.stopPropagation();
     if (!editMode) return;
-    const startIndex = dayIndex.get(item.startDate);
-    const endIndex = dayIndex.get(item.endDate);
+    const startIndex = quarterIndexOf(item.startDate, item.startOffset);
+    const endIndex = quarterIndexOf(item.endDate, item.endOffset);
     if (startIndex === undefined || endIndex === undefined) return;
-    const idx = indexFromClientX(e.clientX);
+    const idx = quarterFromClientX(e.clientX);
     dragStateRef.current = {
       mode,
       itemId: item.id,
@@ -259,13 +291,13 @@ export default function Timeline() {
 
   async function handleCreateSave(values: { title: string; subtitle: string; color: ItemColor }) {
     if (!creatingDraft) return;
-    const startDate = toISODate(days[creatingDraft.startIndex]);
-    const endDate = toISODate(days[creatingDraft.endIndex]);
+    const { date: startDate, offset: startOffset } = quarterToDateOffset(creatingDraft.startIndex);
+    const { date: endDate, offset: endOffset } = quarterToDateOffset(creatingDraft.endIndex);
     setCreatingDraft(null);
     const res = await fetch("/api/items", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ startDate, endDate, ...values }),
+      body: JSON.stringify({ startDate, startOffset, endDate, endOffset, ...values }),
     });
     if (res.ok) {
       const item = await res.json();
@@ -366,8 +398,8 @@ export default function Timeline() {
                 item={item}
                 editable={editMode}
                 isDragging={!!preview}
-                left={s * dayWidth}
-                width={(e - s + 1) * dayWidth}
+                left={s * quarterWidth}
+                width={(e - s + 1) * quarterWidth}
                 top={lane * (ITEM_HEIGHT + ITEM_GAP) + ITEM_GAP}
                 onDragStart={handleItemDragStart}
               />
@@ -378,8 +410,8 @@ export default function Timeline() {
             <div
               className={`${itemBlockStyles.item} ${itemBlockStyles.draft}`}
               style={{
-                left: creatingDraft.startIndex * dayWidth,
-                width: (creatingDraft.endIndex - creatingDraft.startIndex + 1) * dayWidth,
+                left: creatingDraft.startIndex * quarterWidth,
+                width: (creatingDraft.endIndex - creatingDraft.startIndex + 1) * quarterWidth,
                 top: ITEM_GAP,
               }}
             />
@@ -397,15 +429,20 @@ export default function Timeline() {
         </div>
       </div>
 
-      {creatingDraft && (
-        <ItemEditorPopover
-          mode="create"
-          startDate={toISODate(days[creatingDraft.startIndex])}
-          endDate={toISODate(days[creatingDraft.endIndex])}
-          onSave={handleCreateSave}
-          onCancel={() => setCreatingDraft(null)}
-        />
-      )}
+      {creatingDraft &&
+        (() => {
+          const start = quarterToDateOffset(creatingDraft.startIndex);
+          const end = quarterToDateOffset(creatingDraft.endIndex);
+          return (
+            <ItemEditorPopover
+              mode="create"
+              startDate={start.date}
+              endDate={end.date}
+              onSave={handleCreateSave}
+              onCancel={() => setCreatingDraft(null)}
+            />
+          );
+        })()}
 
       {editingItem && (
         <ItemEditorPopover

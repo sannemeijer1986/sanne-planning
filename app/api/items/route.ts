@@ -16,16 +16,18 @@ export async function POST(request: NextRequest) {
   }
 
   const body = (await request.json().catch(() => null)) as Partial<CreateItemInput> | null;
-  const { startDate, endDate, title, subtitle, color } = body ?? {};
+  const { startDate, startOffset, endDate, endOffset, title, subtitle, color } = body ?? {};
 
   if (
     typeof startDate !== "string" ||
     typeof endDate !== "string" ||
+    typeof startOffset !== "number" ||
+    typeof endOffset !== "number" ||
     typeof title !== "string" ||
     typeof subtitle !== "string" ||
     typeof color !== "string" ||
     !(ITEM_COLORS as readonly string[]).includes(color) ||
-    !isValidRange(startDate, endDate)
+    !isValidRange(startDate, startOffset, endDate, endOffset)
   ) {
     return NextResponse.json({ error: "Invalid item" }, { status: 400 });
   }
@@ -34,7 +36,9 @@ export async function POST(request: NextRequest) {
   const item: TimelineItem = {
     id: nanoid(),
     startDate,
+    startOffset,
     endDate,
+    endOffset,
     title: title.slice(0, 80),
     subtitle: subtitle.slice(0, 120),
     color: color as TimelineItem["color"],

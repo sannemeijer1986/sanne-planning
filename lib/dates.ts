@@ -94,9 +94,23 @@ export function currentWeekColumnIndices(dayIndex: Map<string, number>, date: Da
     .filter((i): i is number => i !== undefined);
 }
 
-export function isValidRange(startDate: string, endDate: string): boolean {
+function isValidOffset(offset: number): boolean {
+  return Number.isInteger(offset) && offset >= 0 && offset <= 3;
+}
+
+/** Validates a start/end range including quarter-day offsets (0-3, inclusive on the end side). */
+export function isValidRange(
+  startDate: string,
+  startOffset: number,
+  endDate: string,
+  endOffset: number
+): boolean {
+  if (!isValidOffset(startOffset) || !isValidOffset(endOffset)) return false;
   const start = parseISODate(startDate);
   const end = parseISODate(endDate);
   if (isWeekend(start) || isWeekend(end)) return false;
-  return compareAsc(start, end) <= 0;
+  const comparison = compareAsc(start, end);
+  if (comparison < 0) return true;
+  if (comparison > 0) return false;
+  return startOffset <= endOffset;
 }
