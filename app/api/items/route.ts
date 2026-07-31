@@ -16,13 +16,16 @@ export async function POST(request: NextRequest) {
   }
 
   const body = (await request.json().catch(() => null)) as Partial<CreateItemInput> | null;
-  const { startDate, startOffset, endDate, endOffset, title, subtitle, color } = body ?? {};
+  const { startDate, startOffset, endDate, endOffset, lane, title, subtitle, color } = body ?? {};
 
   if (
     typeof startDate !== "string" ||
     typeof endDate !== "string" ||
     typeof startOffset !== "number" ||
     typeof endOffset !== "number" ||
+    typeof lane !== "number" ||
+    !Number.isInteger(lane) ||
+    lane < 0 ||
     typeof title !== "string" ||
     typeof subtitle !== "string" ||
     typeof color !== "string" ||
@@ -39,6 +42,7 @@ export async function POST(request: NextRequest) {
     startOffset,
     endDate,
     endOffset,
+    lane,
     title: title.slice(0, 80),
     subtitle: subtitle.slice(0, 120),
     color: color as TimelineItem["color"],

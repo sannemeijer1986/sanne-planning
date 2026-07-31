@@ -28,7 +28,12 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     typeof body.startOffset === "number" ? body.startOffset : (item.startOffset ?? 0);
   const nextEndOffset =
     typeof body.endOffset === "number" ? body.endOffset : (item.endOffset ?? QUARTERS_PER_DAY - 1);
-  if (!isValidRange(nextStartDate, nextStartOffset, nextEndDate, nextEndOffset)) {
+  const nextLane = typeof body.lane === "number" ? body.lane : (item.lane ?? 0);
+  if (
+    !isValidRange(nextStartDate, nextStartOffset, nextEndDate, nextEndOffset) ||
+    !Number.isInteger(nextLane) ||
+    nextLane < 0
+  ) {
     return NextResponse.json({ error: "Invalid date range" }, { status: 400 });
   }
 
@@ -36,6 +41,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   item.endDate = nextEndDate;
   item.startOffset = nextStartOffset;
   item.endOffset = nextEndOffset;
+  item.lane = nextLane;
   if (typeof body.title === "string") item.title = body.title.slice(0, 80);
   if (typeof body.subtitle === "string") item.subtitle = body.subtitle.slice(0, 120);
   if (typeof body.color === "string" && (ITEM_COLORS as readonly string[]).includes(body.color)) {

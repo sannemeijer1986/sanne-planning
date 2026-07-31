@@ -10,7 +10,6 @@ import {
   resolveColumnIndex,
   toISODate,
 } from "@/lib/dates";
-import { assignLanes } from "@/lib/lanePacking";
 import { QUARTERS_PER_DAY, type ItemColor, type TimelineItem } from "@/types/planning";
 import EditModeToggle from "@/components/EditModeToggle";
 import DayColumn from "./DayColumn";
@@ -22,12 +21,13 @@ import ItemEditorPopover from "./ItemEditorPopover";
 import itemBlockStyles from "./ItemBlock.module.scss";
 import styles from "./Timeline.module.scss";
 
-const MONTHS_BACK = 3;
+const MONTHS_BACK = 6;
 const INITIAL_MONTHS_FORWARD = 12;
 const LOAD_MORE_MONTHS = 3;
 const MIN_LANES = 6;
 const ITEM_HEIGHT = 56;
 const ITEM_GAP = 6;
+const ROW_HEIGHT = ITEM_HEIGHT + ITEM_GAP;
 const LOAD_MORE_WIDTH = 140;
 // Mirrors $month-label-height + $column-header-height in styles/_variables.scss.
 const HEADER_HEIGHT = 48 + 88;
@@ -35,6 +35,7 @@ const HEADER_HEIGHT = 48 + 88;
 interface DraftRange {
   startIndex: number; // quarter-day index
   endIndex: number; // quarter-day index, inclusive
+  lane: number;
 }
 
 interface DragState {
@@ -45,6 +46,9 @@ interface DragState {
   originEnd: number;
   currentStart?: number;
   currentEnd?: number;
+  anchorY: number;
+  originLane: number;
+  currentLane?: number;
   moved: boolean;
 }
 
@@ -61,6 +65,7 @@ export default function Timeline() {
     itemId: string;
     startIndex: number;
     endIndex: number;
+    lane: number;
   } | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -128,35 +133,25 @@ export default function Timeline() {
     return { date: toISODate(days[dIdx]), offset: clamped % QUARTERS_PER_DAY };
   }
 
+  // Rows are positioned manually (by dragging) — never auto-assigned by overlap.
   const positioned = useMemo(() => {
-    const withIndices = items
+    return items
       .map((item) => {
         // Legacy items predating quarter-day snapping have no offset fields; default to full-day.
         const startIndex = quarterIndexOf(item.startDate, item.startOffset ?? 0);
         const endIndex = quarterIndexOf(item.endDate, item.endOffset ?? QUARTERS_PER_DAY - 1);
         if (startIndex === undefined || endIndex === undefined) return null;
-        return { item, startIndex, endIndex };
+        return { item, startIndex, endIndex, lane: item.lane ?? 0 };
       })
-      .filter((v): v is { item: TimelineItem; startIndex: number; endIndex: number } => v !== null);
-
-    const lanes = assignLanes(
-      withIndices.map(({ item, startIndex, endIndex }) => ({ id: item.id, startIndex, endIndex }))
-    );
-
-    return withIndices.map(({ item, startIndex, endIndex }) => ({
-      item,
-      startIndex,
-      endIndex,
-      lane: lanes.get(item.id) ?? 0,
-    }));
+      .filter(
+        (v): v is { item: TimelineItem; startIndex: number; endIndex: number; lane: number } =>
+          v !== null
+      );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items, dayIndex]);
 
   const totalLanes = Math.max(MIN_LANES, ...positioned.map((p) => p.lane + 1));
-  const bodyHeight = Math.max(
-    totalLanes * (ITEM_HEIGHT + ITEM_GAP) + ITEM_GAP,
-    viewportHeight - HEADER_HEIGHT
-  );
+  const bodyHeight = Math.max(totalLanes * ROW_HEIGHT + ITEM_GAP, viewportHeight - HEADER_HEIGHT);
 
   useEffect(() => {
     if (!dayWidthReady || hasScrolledRef.current) return;
@@ -183,16 +178,23 @@ export default function Timeline() {
     return Math.min(Math.max(idx, 0), totalQuarters - 1);
   }
 
+  function laneFromClientY(clientY: number): number {
+    const body = bodyRef.current;
+    if (!body) return 0;
+    const rect = body.getBoundingClientRect();
+    return Math.max(0, Math.floor((clientY - rect.top) / ROW_HEIGHT));
+  }
+
   function handleWindowPointerMove(e: PointerEvent) {
     const drag = dragStateRef.current;
     if (!drag) return;
     const idx = quarterFromClientX(e.clientX);
-    if (idx !== drag.anchorIndex) drag.moved = true;
 
     if (drag.mode === "create") {
+      if (idx !== drag.anchorIndex) drag.moved = true;
       drag.currentStart = Math.min(drag.anchorIndex, idx);
       drag.currentEnd = Math.max(drag.anchorIndex, idx);
-      setCreatingDraft({ startIndex: drag.currentStart, endIndex: drag.currentEnd });
+      setCreatingDraft({ startIndex: drag.currentStart, endIndex: drag.currentEnd, lane: drag.originLane });
       return;
     }
 
@@ -202,6 +204,8 @@ export default function Timeline() {
       const newStart = Math.min(Math.max(drag.originStart + delta, 0), totalQuarters - 1 - duration);
       drag.currentStart = newStart;
       drag.currentEnd = newStart + duration;
+      const deltaLane = Math.round((e.clientY - drag.anchorY) / ROW_HEIGHT);
+      drag.currentLane = Math.max(0, drag.originLane + deltaLane);
     } else if (drag.mode === "resize-start") {
       drag.currentStart = Math.min(Math.max(drag.originStart + delta, 0), drag.originEnd);
       drag.currentEnd = drag.originEnd;
@@ -209,7 +213,14 @@ export default function Timeline() {
       drag.currentEnd = Math.max(Math.min(drag.originEnd + delta, totalQuarters - 1), drag.originStart);
       drag.currentStart = drag.originStart;
     }
-    setDragPreview({ itemId: drag.itemId!, startIndex: drag.currentStart, endIndex: drag.currentEnd });
+
+    if (idx !== drag.anchorIndex || drag.currentLane !== drag.originLane) drag.moved = true;
+    setDragPreview({
+      itemId: drag.itemId!,
+      startIndex: drag.currentStart,
+      endIndex: drag.currentEnd,
+      lane: drag.currentLane ?? drag.originLane,
+    });
   }
 
   function handleWindowPointerUp() {
@@ -222,13 +233,14 @@ export default function Timeline() {
     if (drag.mode === "create") {
       const start = drag.currentStart ?? drag.anchorIndex;
       const end = drag.currentEnd ?? drag.anchorIndex;
-      setCreatingDraft({ startIndex: start, endIndex: end });
+      setCreatingDraft({ startIndex: start, endIndex: end, lane: drag.originLane });
       return;
     }
 
     const itemId = drag.itemId!;
     const start = drag.currentStart ?? drag.originStart;
     const end = drag.currentEnd ?? drag.originEnd;
+    const lane = drag.currentLane ?? drag.originLane;
     setDragPreview(null);
 
     if (!drag.moved) {
@@ -240,31 +252,35 @@ export default function Timeline() {
       return;
     }
 
-    if (start === drag.originStart && end === drag.originEnd) return;
+    if (start === drag.originStart && end === drag.originEnd && lane === drag.originLane) return;
 
     const { date: startDate, offset: startOffset } = quarterToDateOffset(start);
     const { date: endDate, offset: endOffset } = quarterToDateOffset(end);
     setItems((prev) =>
-      prev.map((i) => (i.id === itemId ? { ...i, startDate, startOffset, endDate, endOffset } : i))
+      prev.map((i) => (i.id === itemId ? { ...i, startDate, startOffset, endDate, endOffset, lane } : i))
     );
     fetch(`/api/items/${itemId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ startDate, startOffset, endDate, endOffset }),
+      body: JSON.stringify({ startDate, startOffset, endDate, endOffset, lane }),
     }).catch(() => {});
   }
 
   function handleBodyPointerDown(e: ReactPointerEvent<HTMLDivElement>) {
     if (!editMode) return;
     const idx = quarterFromClientX(e.clientX);
+    const lane = laneFromClientY(e.clientY);
     dragStateRef.current = {
       mode: "create",
       anchorIndex: idx,
       originStart: idx,
       originEnd: idx,
+      anchorY: e.clientY,
+      originLane: lane,
+      currentLane: lane,
       moved: false,
     };
-    setCreatingDraft({ startIndex: idx, endIndex: idx });
+    setCreatingDraft({ startIndex: idx, endIndex: idx, lane });
     window.addEventListener("pointermove", handleWindowPointerMove);
     window.addEventListener("pointerup", handleWindowPointerUp);
   }
@@ -272,19 +288,23 @@ export default function Timeline() {
   function handleItemDragStart(item: TimelineItem, mode: DragMode, e: ReactPointerEvent) {
     e.stopPropagation();
     if (!editMode) return;
-    const startIndex = quarterIndexOf(item.startDate, item.startOffset);
-    const endIndex = quarterIndexOf(item.endDate, item.endOffset);
+    const startIndex = quarterIndexOf(item.startDate, item.startOffset ?? 0);
+    const endIndex = quarterIndexOf(item.endDate, item.endOffset ?? QUARTERS_PER_DAY - 1);
     if (startIndex === undefined || endIndex === undefined) return;
     const idx = quarterFromClientX(e.clientX);
+    const lane = item.lane ?? 0;
     dragStateRef.current = {
       mode,
       itemId: item.id,
       anchorIndex: idx,
       originStart: startIndex,
       originEnd: endIndex,
+      anchorY: e.clientY,
+      originLane: lane,
+      currentLane: lane,
       moved: false,
     };
-    setDragPreview({ itemId: item.id, startIndex, endIndex });
+    setDragPreview({ itemId: item.id, startIndex, endIndex, lane });
     window.addEventListener("pointermove", handleWindowPointerMove);
     window.addEventListener("pointerup", handleWindowPointerUp);
   }
@@ -293,11 +313,12 @@ export default function Timeline() {
     if (!creatingDraft) return;
     const { date: startDate, offset: startOffset } = quarterToDateOffset(creatingDraft.startIndex);
     const { date: endDate, offset: endOffset } = quarterToDateOffset(creatingDraft.endIndex);
+    const lane = creatingDraft.lane;
     setCreatingDraft(null);
     const res = await fetch("/api/items", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ startDate, startOffset, endDate, endOffset, ...values }),
+      body: JSON.stringify({ startDate, startOffset, endDate, endOffset, lane, ...values }),
     });
     if (res.ok) {
       const item = await res.json();
@@ -392,6 +413,7 @@ export default function Timeline() {
             const preview = dragPreview?.itemId === item.id ? dragPreview : null;
             const s = preview ? preview.startIndex : startIndex;
             const e = preview ? preview.endIndex : endIndex;
+            const l = preview ? preview.lane : lane;
             return (
               <ItemBlock
                 key={item.id}
@@ -400,7 +422,7 @@ export default function Timeline() {
                 isDragging={!!preview}
                 left={s * quarterWidth}
                 width={(e - s + 1) * quarterWidth}
-                top={lane * (ITEM_HEIGHT + ITEM_GAP) + ITEM_GAP}
+                top={l * ROW_HEIGHT + ITEM_GAP}
                 onDragStart={handleItemDragStart}
               />
             );
@@ -412,7 +434,7 @@ export default function Timeline() {
               style={{
                 left: creatingDraft.startIndex * quarterWidth,
                 width: (creatingDraft.endIndex - creatingDraft.startIndex + 1) * quarterWidth,
-                top: ITEM_GAP,
+                top: creatingDraft.lane * ROW_HEIGHT + ITEM_GAP,
               }}
             />
           )}

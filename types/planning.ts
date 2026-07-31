@@ -1,4 +1,4 @@
-export const ITEM_COLORS = ["blue", "purple", "orange", "green", "pink", "teal"] as const;
+export const ITEM_COLORS = ["blue", "purple", "orange", "green", "gold", "pink", "teal"] as const;
 
 export type ItemColor = (typeof ITEM_COLORS)[number];
 
@@ -13,6 +13,7 @@ export interface TimelineItem {
   startOffset: number; // 0-3
   endDate: string; // ISO yyyy-MM-dd, must fall on a weekday
   endOffset: number; // 0-3, inclusive
+  lane: number; // 0-indexed row; manually positioned by dragging, never auto-assigned
   title: string;
   subtitle: string;
   color: ItemColor;
@@ -26,7 +27,7 @@ export interface PlanningData {
 
 export type CreateItemInput = Pick<
   TimelineItem,
-  "startDate" | "startOffset" | "endDate" | "endOffset" | "title" | "subtitle" | "color"
+  "startDate" | "startOffset" | "endDate" | "endOffset" | "lane" | "title" | "subtitle" | "color"
 >;
 
 export type UpdateItemInput = Partial<CreateItemInput>;
