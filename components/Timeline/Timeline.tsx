@@ -136,6 +136,15 @@ export default function Timeline() {
     hasScrolledRef.current = true;
   }, [dayWidthReady, todayIndex, dayWidth, days.length]);
 
+  function scrollToToday() {
+    const scroll = scrollRef.current;
+    if (!scroll) return;
+    scroll.scrollTo({
+      left: Math.max(todayIndex * dayWidth - scroll.clientWidth / 2, 0),
+      behavior: "smooth",
+    });
+  }
+
   function indexFromClientX(clientX: number): number {
     const body = bodyRef.current;
     if (!body) return 0;
@@ -305,6 +314,9 @@ export default function Timeline() {
   return (
     <div className={styles.page}>
       <EditModeToggle editMode={editMode} onLogin={handleLogin} onLogout={handleLogout} />
+      <button type="button" className={styles.todayButton} onClick={scrollToToday}>
+        Today
+      </button>
 
       <div className={styles.scroll} ref={scrollRef}>
         <div className={styles.sticky} style={{ width: totalWidth }}>
