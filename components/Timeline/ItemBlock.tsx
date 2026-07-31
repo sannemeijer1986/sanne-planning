@@ -44,7 +44,10 @@ export default function ItemBlock({
       onPointerDown={editable ? (e) => onDragStart?.(item, "move", e) : undefined}
     >
       {isLeave ? (
-        <span className={styles.leaveLabel}>{item.title || "On leave"}</span>
+        <div className={styles.leaveText}>
+          <span className={styles.leaveLabel}>{item.title || "On leave"}</span>
+          {item.subtitle && <span className={styles.leaveSubtitle}>{item.subtitle}</span>}
+        </div>
       ) : (
         <div className={styles.text}>
           <span className={styles.title}>{item.title}</span>
