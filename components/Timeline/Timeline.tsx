@@ -39,8 +39,10 @@ function insetRect(left: number, width: number): { left: number; width: number }
   const inset = Math.min(H_GAP / 2, Math.max(width - H_GAP_MIN_WIDTH, 0) / 2);
   return { left: left + inset, width: width - inset * 2 };
 }
+// Mirrors $month-label-height in styles/_variables.scss.
+const MONTH_LABEL_HEIGHT = 72;
 // Mirrors $month-label-height + $column-header-height in styles/_variables.scss.
-const HEADER_HEIGHT = 48 + 88;
+const HEADER_HEIGHT = MONTH_LABEL_HEIGHT + 88;
 
 interface DraftRange {
   startIndex: number; // quarter-day index
@@ -163,13 +165,13 @@ export default function Timeline() {
   const totalLanes = Math.max(MIN_LANES, ...positioned.map((p) => p.lane + 1));
   const bodyHeight = Math.max(totalLanes * ROW_HEIGHT + ITEM_GAP, viewportHeight - HEADER_HEIGHT);
 
-  function renderDayDividers() {
+  function renderDayDividers(top?: number) {
     return days.map((day, i) =>
       i === 0 ? null : (
         <div
           key={i}
           className={day.getDay() === 1 ? styles.weekDivider : styles.divider}
-          style={{ left: i * dayWidth }}
+          style={{ left: i * dayWidth, ...(top !== undefined ? { top } : {}) }}
         />
       )
     );
@@ -405,7 +407,7 @@ export default function Timeline() {
 
       <div className={styles.scroll} ref={scrollRef}>
         <div className={styles.sticky} style={{ width: totalWidth }}>
-          {renderDayDividers()}
+          {renderDayDividers(MONTH_LABEL_HEIGHT)}
           <div className={styles.monthRow} style={{ width: totalWidth }}>
             {months.map((m) => (
               <MonthLabel

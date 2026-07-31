@@ -3,6 +3,7 @@
 // Neutrals
 $color-bg-page: #09090b;
 $color-bg-panel: #18181b;
+$color-bg-elevated: #212124; // day-of-week header row, slightly lighter than the panel
 $color-border-subtle: rgba(255, 255, 255, 0.08);
 $color-border-strong: rgba(255, 255, 255, 0.16);
 $color-week-divider: rgba(255, 255, 255, 0.32); // double $color-border-strong, week-boundary dividers only
@@ -14,10 +15,9 @@ $color-text-subtitle: #f4f4f5; // item subtitle
 $color-today: #60a5fa;
 $color-week-tint: rgba(96, 165, 250, 0.08);
 
-// "On leave" bands
-$color-leave: #fb7185;
-$color-leave-tint: rgba(251, 113, 133, 0.1);
-$color-leave-border: rgba(251, 113, 133, 0.45);
+// "On leave" bands — matches Figma's #444a5c panel (85% opacity, no border)
+$color-leave-bg: rgba(68, 74, 92, 0.85);
+$color-leave-accent: #9aa3b8; // lighter tint of the same hue, for the edit-popover toggle
 
 // Item color palette: {bg, border} pairs, matched to Figma's sampled tokens
 // (blue/purple/orange) plus three additions kept in the same visual weight.
@@ -75,7 +75,7 @@ $item-colors: (
 $day-width-desktop: 120px;
 $day-width-mobile: 56px;
 $column-header-height: 88px;
-$month-label-height: 48px;
+$month-label-height: 72px;
 $item-height: 56px;
 $item-gap: 6px;
 $item-radius: 10px;

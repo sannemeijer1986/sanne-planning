@@ -50,6 +50,7 @@
 .dayRow {
   display: flex;
   height: vars.$column-header-height;
+  background: vars.$color-bg-elevated;
 }
 
 .body {
