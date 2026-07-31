@@ -29,6 +29,37 @@
   font-size: 13px;
 }
 
+.kindToggle {
+  display: flex;
+  gap: 6px;
+  background: vars.$color-bg-page;
+  border: 1px solid vars.$color-border-strong;
+  border-radius: 8px;
+  padding: 3px;
+}
+
+.kindOption {
+  flex: 1;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: vars.$color-text-muted;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.kindSelected {
+  background: vars.$color-bg-panel;
+  color: vars.$color-text-primary;
+}
+
+.kindSelectedLeave {
+  background: vars.$color-bg-panel;
+  color: vars.$color-leave;
+}
+
 .field {
   display: flex;
   flex-direction: column;

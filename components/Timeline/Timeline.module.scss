@@ -67,6 +67,24 @@
   pointer-events: none;
 }
 
+.weekDivider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: vars.$color-border-strong;
+  pointer-events: none;
+}
+
+.rowDivider {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: vars.$color-border-subtle;
+  pointer-events: none;
+}
+
 .loadMore {
   position: absolute;
   top: 0;

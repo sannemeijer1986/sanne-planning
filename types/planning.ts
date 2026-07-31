@@ -19,16 +19,22 @@ export type ItemColor = (typeof ITEM_COLORS)[number];
 // in (endOffset is inclusive of that quarter).
 export const QUARTERS_PER_DAY = 4;
 
+// "work" is a normal colored row item. "leave" spans the full height of the
+// timeline for its date range (no row/color) to mark days off.
+export const ITEM_KINDS = ["work", "leave"] as const;
+export type ItemKind = (typeof ITEM_KINDS)[number];
+
 export interface TimelineItem {
   id: string;
+  kind: ItemKind;
   startDate: string; // ISO yyyy-MM-dd, must fall on a weekday
   startOffset: number; // 0-3
   endDate: string; // ISO yyyy-MM-dd, must fall on a weekday
   endOffset: number; // 0-3, inclusive
-  lane: number; // 0-indexed row; manually positioned by dragging, never auto-assigned
+  lane: number; // 0-indexed row; manually positioned by dragging, never auto-assigned. Unused for "leave".
   title: string;
   subtitle: string;
-  color: ItemColor;
+  color: ItemColor; // unused for "leave"
   createdAt: string;
   updatedAt: string;
 }
@@ -39,7 +45,7 @@ export interface PlanningData {
 
 export type CreateItemInput = Pick<
   TimelineItem,
-  "startDate" | "startOffset" | "endDate" | "endOffset" | "lane" | "title" | "subtitle" | "color"
+  "kind" | "startDate" | "startOffset" | "endDate" | "endOffset" | "lane" | "title" | "subtitle" | "color"
 >;
 
 export type UpdateItemInput = Partial<CreateItemInput>;

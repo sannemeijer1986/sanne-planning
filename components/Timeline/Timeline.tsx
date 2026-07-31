@@ -10,7 +10,7 @@ import {
   resolveColumnIndex,
   toISODate,
 } from "@/lib/dates";
-import { QUARTERS_PER_DAY, type ItemColor, type TimelineItem } from "@/types/planning";
+import { QUARTERS_PER_DAY, type ItemColor, type ItemKind, type TimelineItem } from "@/types/planning";
 import EditModeToggle from "@/components/EditModeToggle";
 import DayColumn from "./DayColumn";
 import MonthLabel from "./MonthLabel";
@@ -319,7 +319,12 @@ export default function Timeline() {
     window.addEventListener("pointerup", handleWindowPointerUp);
   }
 
-  async function handleCreateSave(values: { title: string; subtitle: string; color: ItemColor }) {
+  async function handleCreateSave(values: {
+    kind: ItemKind;
+    title: string;
+    subtitle: string;
+    color: ItemColor;
+  }) {
     if (!creatingDraft) return;
     const { date: startDate, offset: startOffset } = quarterToDateOffset(creatingDraft.startIndex);
     const { date: endDate, offset: endOffset } = quarterToDateOffset(creatingDraft.endIndex);
@@ -336,7 +341,12 @@ export default function Timeline() {
     }
   }
 
-  async function handleEditSave(values: { title: string; subtitle: string; color: ItemColor }) {
+  async function handleEditSave(values: {
+    kind: ItemKind;
+    title: string;
+    subtitle: string;
+    color: ItemColor;
+  }) {
     if (!editingItem) return;
     const id = editingItem.id;
     setEditingItem(null);
@@ -409,11 +419,19 @@ export default function Timeline() {
           {weekTint && <CurrentWeekTint left={weekTint.left} width={weekTint.width} />}
           <TodayMarker left={todayIndex * dayWidth} />
 
-          {days.map((_, i) =>
+          {days.map((day, i) =>
             i === 0 ? null : (
-              <div key={i} className={styles.divider} style={{ left: i * dayWidth }} />
+              <div
+                key={i}
+                className={day.getDay() === 1 ? styles.weekDivider : styles.divider}
+                style={{ left: i * dayWidth }}
+              />
             )
           )}
+
+          {Array.from({ length: totalLanes + 1 }, (_, n) => (
+            <div key={n} className={styles.rowDivider} style={{ top: n * ROW_HEIGHT }} />
+          ))}
 
           {positioned.length === 0 && editMode && (
             <span className={styles.empty}>Drag across days to add your first item</span>
@@ -424,7 +442,10 @@ export default function Timeline() {
             const s = preview ? preview.startIndex : startIndex;
             const e = preview ? preview.endIndex : endIndex;
             const l = preview ? preview.lane : lane;
-            const rect = insetRect(s * quarterWidth, (e - s + 1) * quarterWidth);
+            const isLeave = item.kind === "leave";
+            const rect = isLeave
+              ? { left: s * quarterWidth, width: (e - s + 1) * quarterWidth }
+              : insetRect(s * quarterWidth, (e - s + 1) * quarterWidth);
             return (
               <ItemBlock
                 key={item.id}
@@ -433,7 +454,8 @@ export default function Timeline() {
                 isDragging={!!preview}
                 left={rect.left}
                 width={rect.width}
-                top={l * ROW_HEIGHT + ITEM_GAP}
+                top={isLeave ? 0 : l * ROW_HEIGHT + ITEM_GAP}
+                height={isLeave ? bodyHeight : undefined}
                 onDragStart={handleItemDragStart}
               />
             );
@@ -489,6 +511,7 @@ export default function Timeline() {
           mode="edit"
           startDate={editingItem.startDate}
           endDate={editingItem.endDate}
+          initialKind={editingItem.kind ?? "work"}
           initialTitle={editingItem.title}
           initialSubtitle={editingItem.subtitle}
           initialColor={editingItem.color}

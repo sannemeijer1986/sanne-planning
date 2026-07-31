@@ -36,6 +36,26 @@
   border: 2px dashed vars.$color-today;
 }
 
+.leave {
+  background: vars.$color-leave-tint;
+  border: 2px dashed vars.$color-leave-border;
+  align-items: flex-start;
+  padding-top: 10px;
+  z-index: 0;
+}
+
+.leaveLabel {
+  color: vars.$color-leave;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
 .text {
   display: flex;
   flex-direction: column;

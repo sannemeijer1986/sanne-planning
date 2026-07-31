@@ -3,7 +3,7 @@ import { nanoid } from "nanoid";
 import { isAuthorized } from "@/lib/auth";
 import { getPlanningData, savePlanningData } from "@/lib/blobStore";
 import { isValidRange } from "@/lib/dates";
-import { ITEM_COLORS, type CreateItemInput, type TimelineItem } from "@/types/planning";
+import { ITEM_COLORS, ITEM_KINDS, type CreateItemInput, type TimelineItem } from "@/types/planning";
 
 export async function GET() {
   const data = await getPlanningData();
@@ -16,9 +16,11 @@ export async function POST(request: NextRequest) {
   }
 
   const body = (await request.json().catch(() => null)) as Partial<CreateItemInput> | null;
-  const { startDate, startOffset, endDate, endOffset, lane, title, subtitle, color } = body ?? {};
+  const { kind, startDate, startOffset, endDate, endOffset, lane, title, subtitle, color } = body ?? {};
 
   if (
+    typeof kind !== "string" ||
+    !(ITEM_KINDS as readonly string[]).includes(kind) ||
     typeof startDate !== "string" ||
     typeof endDate !== "string" ||
     typeof startOffset !== "number" ||
@@ -38,6 +40,7 @@ export async function POST(request: NextRequest) {
   const now = new Date().toISOString();
   const item: TimelineItem = {
     id: nanoid(),
+    kind: kind as TimelineItem["kind"],
     startDate,
     startOffset,
     endDate,

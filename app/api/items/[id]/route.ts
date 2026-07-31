@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { isAuthorized } from "@/lib/auth";
 import { getPlanningData, savePlanningData } from "@/lib/blobStore";
 import { isValidRange } from "@/lib/dates";
-import { ITEM_COLORS, QUARTERS_PER_DAY, type UpdateItemInput } from "@/types/planning";
+import { ITEM_COLORS, ITEM_KINDS, QUARTERS_PER_DAY, type UpdateItemInput } from "@/types/planning";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -42,6 +42,9 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   item.startOffset = nextStartOffset;
   item.endOffset = nextEndOffset;
   item.lane = nextLane;
+  if (typeof body.kind === "string" && (ITEM_KINDS as readonly string[]).includes(body.kind)) {
+    item.kind = body.kind as typeof item.kind;
+  }
   if (typeof body.title === "string") item.title = body.title.slice(0, 80);
   if (typeof body.subtitle === "string") item.subtitle = body.subtitle.slice(0, 120);
   if (typeof body.color === "string" && (ITEM_COLORS as readonly string[]).includes(body.color)) {

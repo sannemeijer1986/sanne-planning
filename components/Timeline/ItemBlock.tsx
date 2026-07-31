@@ -11,6 +11,7 @@ interface ItemBlockProps {
   left: number;
   width: number;
   top: number;
+  height?: number; // overrides the default row height for full-height "leave" bands
   editable: boolean;
   isDragging?: boolean;
   onDragStart?: (item: TimelineItem, mode: DragMode, e: PointerEvent) => void;
@@ -21,13 +22,15 @@ export default function ItemBlock({
   left,
   width,
   top,
+  height,
   editable,
   isDragging,
   onDragStart,
 }: ItemBlockProps) {
+  const isLeave = item.kind === "leave";
   const className = [
     styles.item,
-    styles[`color-${item.color}`],
+    isLeave ? styles.leave : styles[`color-${item.color}`],
     editable ? styles.editable : "",
     isDragging ? styles.dragging : "",
   ]
@@ -37,13 +40,17 @@ export default function ItemBlock({
   return (
     <div
       className={className}
-      style={{ left, width, top }}
+      style={{ left, width, top, ...(height !== undefined ? { height } : {}) }}
       onPointerDown={editable ? (e) => onDragStart?.(item, "move", e) : undefined}
     >
-      <div className={styles.text}>
-        <span className={styles.title}>{item.title}</span>
-        <span className={styles.subtitle}>{item.subtitle}</span>
-      </div>
+      {isLeave ? (
+        <span className={styles.leaveLabel}>{item.title || "On leave"}</span>
+      ) : (
+        <div className={styles.text}>
+          <span className={styles.title}>{item.title}</span>
+          <span className={styles.subtitle}>{item.subtitle}</span>
+        </div>
+      )}
       {editable && (
         <>
           <div
