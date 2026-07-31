@@ -1,0 +1,413 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { PointerEvent as ReactPointerEvent } from "react";
+import {
+  buildDayIndex,
+  buildMonthLabels,
+  currentWeekColumnIndices,
+  generateDefaultRange,
+  resolveColumnIndex,
+  toISODate,
+} from "@/lib/dates";
+import { assignLanes } from "@/lib/lanePacking";
+import type { ItemColor, TimelineItem } from "@/types/planning";
+import EditModeToggle from "@/components/EditModeToggle";
+import DayColumn from "./DayColumn";
+import MonthLabel from "./MonthLabel";
+import TodayMarker from "./TodayMarker";
+import CurrentWeekTint from "./CurrentWeekTint";
+import ItemBlock, { type DragMode } from "./ItemBlock";
+import ItemEditorPopover from "./ItemEditorPopover";
+import itemBlockStyles from "./ItemBlock.module.scss";
+import styles from "./Timeline.module.scss";
+
+const MONTHS_BACK = 3;
+const INITIAL_MONTHS_FORWARD = 12;
+const LOAD_MORE_MONTHS = 3;
+const MIN_LANES = 6;
+const ITEM_HEIGHT = 56;
+const ITEM_GAP = 6;
+const LOAD_MORE_WIDTH = 140;
+
+interface DraftRange {
+  startIndex: number;
+  endIndex: number;
+}
+
+interface DragState {
+  mode: DragMode | "create";
+  itemId?: string;
+  anchorIndex: number;
+  originStart: number;
+  originEnd: number;
+  currentStart?: number;
+  currentEnd?: number;
+  moved: boolean;
+}
+
+export default function Timeline() {
+  const [items, setItems] = useState<TimelineItem[]>([]);
+  const [editMode, setEditMode] = useState(false);
+  const [monthsForward, setMonthsForward] = useState(INITIAL_MONTHS_FORWARD);
+  const [dayWidth, setDayWidth] = useState(120);
+  const [dayWidthReady, setDayWidthReady] = useState(false);
+  const [creatingDraft, setCreatingDraft] = useState<DraftRange | null>(null);
+  const [editingItem, setEditingItem] = useState<TimelineItem | null>(null);
+  const [dragPreview, setDragPreview] = useState<{
+    itemId: string;
+    startIndex: number;
+    endIndex: number;
+  } | null>(null);
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const dragStateRef = useRef<DragState | null>(null);
+  const hasScrolledRef = useRef(false);
+  const today = useMemo(() => new Date(), []);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 640px)");
+    const update = () => setDayWidth(mq.matches ? 56 : 120);
+    update();
+    setDayWidthReady(true);
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/items")
+      .then((res) => (res.ok ? res.json() : { items: [] }))
+      .then((data) => setItems(data.items ?? []))
+      .catch(() => {});
+    fetch("/api/auth/status")
+      .then((res) => (res.ok ? res.json() : { editMode: false }))
+      .then((data) => setEditMode(!!data.editMode))
+      .catch(() => {});
+  }, []);
+
+  const days = useMemo(
+    () => generateDefaultRange(today, MONTHS_BACK, monthsForward),
+    [today, monthsForward]
+  );
+  const dayIndex = useMemo(() => buildDayIndex(days), [days]);
+  const months = useMemo(() => buildMonthLabels(days), [days]);
+  const todayIndex = useMemo(() => resolveColumnIndex(dayIndex, today), [dayIndex, today]);
+  const weekIndices = useMemo(() => currentWeekColumnIndices(dayIndex, today), [dayIndex, today]);
+  const weekTint = useMemo(() => {
+    if (weekIndices.length === 0) return null;
+    const min = Math.min(...weekIndices);
+    const max = Math.max(...weekIndices);
+    return { left: min * dayWidth, width: (max - min + 1) * dayWidth };
+  }, [weekIndices, dayWidth]);
+
+  const totalWidth = days.length * dayWidth;
+
+  const positioned = useMemo(() => {
+    const withIndices = items
+      .map((item) => {
+        const startIndex = dayIndex.get(item.startDate);
+        const endIndex = dayIndex.get(item.endDate);
+        if (startIndex === undefined || endIndex === undefined) return null;
+        return { item, startIndex, endIndex };
+      })
+      .filter((v): v is { item: TimelineItem; startIndex: number; endIndex: number } => v !== null);
+
+    const lanes = assignLanes(
+      withIndices.map(({ item, startIndex, endIndex }) => ({ id: item.id, startIndex, endIndex }))
+    );
+
+    return withIndices.map(({ item, startIndex, endIndex }) => ({
+      item,
+      startIndex,
+      endIndex,
+      lane: lanes.get(item.id) ?? 0,
+    }));
+  }, [items, dayIndex]);
+
+  const totalLanes = Math.max(MIN_LANES, ...positioned.map((p) => p.lane + 1));
+  const bodyHeight = totalLanes * (ITEM_HEIGHT + ITEM_GAP) + ITEM_GAP;
+
+  useEffect(() => {
+    if (!dayWidthReady || hasScrolledRef.current) return;
+    const scroll = scrollRef.current;
+    if (!scroll || days.length === 0) return;
+    scroll.scrollLeft = Math.max(todayIndex * dayWidth - scroll.clientWidth / 2, 0);
+    hasScrolledRef.current = true;
+  }, [dayWidthReady, todayIndex, dayWidth, days.length]);
+
+  function indexFromClientX(clientX: number): number {
+    const body = bodyRef.current;
+    if (!body) return 0;
+    const rect = body.getBoundingClientRect();
+    const idx = Math.floor((clientX - rect.left) / dayWidth);
+    return Math.min(Math.max(idx, 0), days.length - 1);
+  }
+
+  function handleWindowPointerMove(e: PointerEvent) {
+    const drag = dragStateRef.current;
+    if (!drag) return;
+    const idx = indexFromClientX(e.clientX);
+    if (idx !== drag.anchorIndex) drag.moved = true;
+
+    if (drag.mode === "create") {
+      drag.currentStart = Math.min(drag.anchorIndex, idx);
+      drag.currentEnd = Math.max(drag.anchorIndex, idx);
+      setCreatingDraft({ startIndex: drag.currentStart, endIndex: drag.currentEnd });
+      return;
+    }
+
+    const delta = idx - drag.anchorIndex;
+    const duration = drag.originEnd - drag.originStart;
+    if (drag.mode === "move") {
+      const newStart = Math.min(Math.max(drag.originStart + delta, 0), days.length - 1 - duration);
+      drag.currentStart = newStart;
+      drag.currentEnd = newStart + duration;
+    } else if (drag.mode === "resize-start") {
+      drag.currentStart = Math.min(Math.max(drag.originStart + delta, 0), drag.originEnd);
+      drag.currentEnd = drag.originEnd;
+    } else {
+      drag.currentEnd = Math.max(Math.min(drag.originEnd + delta, days.length - 1), drag.originStart);
+      drag.currentStart = drag.originStart;
+    }
+    setDragPreview({ itemId: drag.itemId!, startIndex: drag.currentStart, endIndex: drag.currentEnd });
+  }
+
+  function handleWindowPointerUp() {
+    window.removeEventListener("pointermove", handleWindowPointerMove);
+    window.removeEventListener("pointerup", handleWindowPointerUp);
+    const drag = dragStateRef.current;
+    dragStateRef.current = null;
+    if (!drag) return;
+
+    if (drag.mode === "create") {
+      const start = drag.currentStart ?? drag.anchorIndex;
+      const end = drag.currentEnd ?? drag.anchorIndex;
+      setCreatingDraft({ startIndex: start, endIndex: end });
+      return;
+    }
+
+    const itemId = drag.itemId!;
+    const start = drag.currentStart ?? drag.originStart;
+    const end = drag.currentEnd ?? drag.originEnd;
+    setDragPreview(null);
+
+    if (!drag.moved) {
+      setItems((prev) => {
+        const original = prev.find((i) => i.id === itemId);
+        if (original) setEditingItem(original);
+        return prev;
+      });
+      return;
+    }
+
+    if (start === drag.originStart && end === drag.originEnd) return;
+
+    const startDate = toISODate(days[start]);
+    const endDate = toISODate(days[end]);
+    setItems((prev) => prev.map((i) => (i.id === itemId ? { ...i, startDate, endDate } : i)));
+    fetch(`/api/items/${itemId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ startDate, endDate }),
+    }).catch(() => {});
+  }
+
+  function handleBodyPointerDown(e: ReactPointerEvent<HTMLDivElement>) {
+    if (!editMode) return;
+    const idx = indexFromClientX(e.clientX);
+    dragStateRef.current = {
+      mode: "create",
+      anchorIndex: idx,
+      originStart: idx,
+      originEnd: idx,
+      moved: false,
+    };
+    setCreatingDraft({ startIndex: idx, endIndex: idx });
+    window.addEventListener("pointermove", handleWindowPointerMove);
+    window.addEventListener("pointerup", handleWindowPointerUp);
+  }
+
+  function handleItemDragStart(item: TimelineItem, mode: DragMode, e: ReactPointerEvent) {
+    e.stopPropagation();
+    if (!editMode) return;
+    const startIndex = dayIndex.get(item.startDate);
+    const endIndex = dayIndex.get(item.endDate);
+    if (startIndex === undefined || endIndex === undefined) return;
+    const idx = indexFromClientX(e.clientX);
+    dragStateRef.current = {
+      mode,
+      itemId: item.id,
+      anchorIndex: idx,
+      originStart: startIndex,
+      originEnd: endIndex,
+      moved: false,
+    };
+    setDragPreview({ itemId: item.id, startIndex, endIndex });
+    window.addEventListener("pointermove", handleWindowPointerMove);
+    window.addEventListener("pointerup", handleWindowPointerUp);
+  }
+
+  async function handleCreateSave(values: { title: string; subtitle: string; color: ItemColor }) {
+    if (!creatingDraft) return;
+    const startDate = toISODate(days[creatingDraft.startIndex]);
+    const endDate = toISODate(days[creatingDraft.endIndex]);
+    setCreatingDraft(null);
+    const res = await fetch("/api/items", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ startDate, endDate, ...values }),
+    });
+    if (res.ok) {
+      const item = await res.json();
+      setItems((prev) => [...prev, item]);
+    }
+  }
+
+  async function handleEditSave(values: { title: string; subtitle: string; color: ItemColor }) {
+    if (!editingItem) return;
+    const id = editingItem.id;
+    setEditingItem(null);
+    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, ...values } : i)));
+    await fetch(`/api/items/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(values),
+    });
+  }
+
+  async function handleDelete() {
+    if (!editingItem) return;
+    const id = editingItem.id;
+    setEditingItem(null);
+    setItems((prev) => prev.filter((i) => i.id !== id));
+    await fetch(`/api/items/${id}`, { method: "DELETE" });
+  }
+
+  async function handleLogin(password: string): Promise<boolean> {
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password }),
+    });
+    if (res.ok) {
+      setEditMode(true);
+      return true;
+    }
+    return false;
+  }
+
+  async function handleLogout() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    setEditMode(false);
+  }
+
+  return (
+    <div className={styles.page}>
+      <EditModeToggle editMode={editMode} onLogin={handleLogin} onLogout={handleLogout} />
+
+      <div className={styles.scroll} ref={scrollRef}>
+        <div className={styles.sticky} style={{ width: totalWidth }}>
+          <div className={styles.monthRow} style={{ width: totalWidth }}>
+            {months.map((m) => (
+              <MonthLabel
+                key={`${m.label}-${m.startIndex}`}
+                label={m.label}
+                left={m.startIndex * dayWidth}
+                width={m.span * dayWidth}
+              />
+            ))}
+          </div>
+          <div className={styles.dayRow} style={{ width: totalWidth }}>
+            {days.map((day, i) => (
+              <DayColumn key={i} date={day} width={dayWidth} />
+            ))}
+          </div>
+        </div>
+
+        <div
+          className={styles.body}
+          ref={bodyRef}
+          style={{ width: totalWidth + LOAD_MORE_WIDTH, height: bodyHeight }}
+          onPointerDown={handleBodyPointerDown}
+        >
+          {weekTint && <CurrentWeekTint left={weekTint.left} width={weekTint.width} />}
+          <TodayMarker left={todayIndex * dayWidth} />
+
+          {days.map((_, i) =>
+            i === 0 ? null : (
+              <div key={i} className={styles.divider} style={{ left: i * dayWidth }} />
+            )
+          )}
+
+          {positioned.length === 0 && editMode && (
+            <span className={styles.empty}>Drag across days to add your first item</span>
+          )}
+
+          {positioned.map(({ item, startIndex, endIndex, lane }) => {
+            const preview = dragPreview?.itemId === item.id ? dragPreview : null;
+            const s = preview ? preview.startIndex : startIndex;
+            const e = preview ? preview.endIndex : endIndex;
+            return (
+              <ItemBlock
+                key={item.id}
+                item={item}
+                editable={editMode}
+                isDragging={!!preview}
+                left={s * dayWidth}
+                width={(e - s + 1) * dayWidth}
+                top={lane * (ITEM_HEIGHT + ITEM_GAP) + ITEM_GAP}
+                onDragStart={handleItemDragStart}
+              />
+            );
+          })}
+
+          {creatingDraft && (
+            <div
+              className={`${itemBlockStyles.item} ${itemBlockStyles.draft}`}
+              style={{
+                left: creatingDraft.startIndex * dayWidth,
+                width: (creatingDraft.endIndex - creatingDraft.startIndex + 1) * dayWidth,
+                top: ITEM_GAP,
+              }}
+            />
+          )}
+
+          <button
+            type="button"
+            className={styles.loadMore}
+            style={{ left: totalWidth, width: LOAD_MORE_WIDTH }}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={() => setMonthsForward((m) => m + LOAD_MORE_MONTHS)}
+          >
+            Load 3 more months →
+          </button>
+        </div>
+      </div>
+
+      {creatingDraft && (
+        <ItemEditorPopover
+          mode="create"
+          startDate={toISODate(days[creatingDraft.startIndex])}
+          endDate={toISODate(days[creatingDraft.endIndex])}
+          onSave={handleCreateSave}
+          onCancel={() => setCreatingDraft(null)}
+        />
+      )}
+
+      {editingItem && (
+        <ItemEditorPopover
+          mode="edit"
+          startDate={editingItem.startDate}
+          endDate={editingItem.endDate}
+          initialTitle={editingItem.title}
+          initialSubtitle={editingItem.subtitle}
+          initialColor={editingItem.color}
+          onSave={handleEditSave}
+          onCancel={() => setEditingItem(null)}
+          onDelete={handleDelete}
+        />
+      )}
+    </div>
+  );
+}

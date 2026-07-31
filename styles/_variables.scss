@@ -1,0 +1,55 @@
+// Design tokens sourced from the Figma "Design planning" file.
+
+// Neutrals
+$color-bg-page: #09090b;
+$color-bg-panel: #18181b;
+$color-border-subtle: rgba(255, 255, 255, 0.08);
+$color-border-strong: rgba(255, 255, 255, 0.16);
+$color-text-muted: #a1a1aa; // weekday label ("Mon")
+$color-text-primary: #ffffff; // date, month label
+$color-text-subtitle: #f4f4f5; // item subtitle
+
+// Today marker + current week tint
+$color-today: #60a5fa;
+$color-week-tint: rgba(96, 165, 250, 0.08);
+
+// Item color palette: {bg, border} pairs, matched to Figma's sampled tokens
+// (blue/purple/orange) plus three additions kept in the same visual weight.
+// Keys are quoted: several of these names (blue, purple, teal, green, pink,
+// orange) are also valid CSS color keywords, and Sass will parse an unquoted
+// version as a color literal rather than a string when interpolated.
+$item-colors: (
+  "blue": (
+    bg: #123db8,
+    border: #1d4ed8,
+  ),
+  "purple": (
+    bg: #5f1dc8,
+    border: #6d28d9,
+  ),
+  "orange": (
+    bg: #c2410c,
+    border: #ea580c,
+  ),
+  "green": (
+    bg: #15803d,
+    border: #16a34a,
+  ),
+  "pink": (
+    bg: #be185d,
+    border: #db2777,
+  ),
+  "teal": (
+    bg: #0f766e,
+    border: #14b8a6,
+  ),
+);
+
+// Layout
+$day-width-desktop: 120px;
+$day-width-mobile: 56px;
+$column-header-height: 88px;
+$month-label-height: 48px;
+$item-height: 56px;
+$item-gap: 6px;
+$item-radius: 10px;

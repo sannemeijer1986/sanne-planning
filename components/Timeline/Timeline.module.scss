@@ -1,0 +1,82 @@
+@use "@/styles/variables" as vars;
+
+.page {
+  position: relative;
+  height: 100dvh;
+  width: 100%;
+  overflow: hidden;
+  background: vars.$color-bg-page;
+}
+
+.scroll {
+  height: 100%;
+  width: 100%;
+  overflow: auto;
+  position: relative;
+}
+
+.sticky {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: vars.$color-bg-panel;
+  border-bottom: 1px solid vars.$color-border-strong;
+}
+
+.monthRow {
+  position: relative;
+  height: vars.$month-label-height;
+}
+
+.dayRow {
+  display: flex;
+  height: vars.$column-header-height;
+}
+
+.body {
+  position: relative;
+  background: vars.$color-bg-panel;
+  touch-action: pan-x pan-y;
+}
+
+.divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: vars.$color-border-subtle;
+  pointer-events: none;
+}
+
+.loadMore {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-left: 1px solid vars.$color-border-subtle;
+  background: vars.$color-bg-page;
+  color: vars.$color-text-muted;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  padding: 0 12px;
+
+  &:hover {
+    color: vars.$color-text-primary;
+  }
+}
+
+.empty {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: vars.$color-text-muted;
+  font-size: 13px;
+  white-space: nowrap;
+  pointer-events: none;
+}

@@ -1,0 +1,10 @@
+@use "@/styles/variables" as vars;
+
+.tint {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: vars.$color-week-tint;
+  pointer-events: none;
+  z-index: 0;
+}
