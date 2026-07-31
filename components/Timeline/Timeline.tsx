@@ -163,6 +163,18 @@ export default function Timeline() {
   const totalLanes = Math.max(MIN_LANES, ...positioned.map((p) => p.lane + 1));
   const bodyHeight = Math.max(totalLanes * ROW_HEIGHT + ITEM_GAP, viewportHeight - HEADER_HEIGHT);
 
+  function renderDayDividers() {
+    return days.map((day, i) =>
+      i === 0 ? null : (
+        <div
+          key={i}
+          className={day.getDay() === 1 ? styles.weekDivider : styles.divider}
+          style={{ left: i * dayWidth }}
+        />
+      )
+    );
+  }
+
   useEffect(() => {
     if (!dayWidthReady || hasScrolledRef.current) return;
     const scroll = scrollRef.current;
@@ -393,6 +405,7 @@ export default function Timeline() {
 
       <div className={styles.scroll} ref={scrollRef}>
         <div className={styles.sticky} style={{ width: totalWidth }}>
+          {renderDayDividers()}
           <div className={styles.monthRow} style={{ width: totalWidth }}>
             {months.map((m) => (
               <MonthLabel
@@ -419,17 +432,9 @@ export default function Timeline() {
           {weekTint && <CurrentWeekTint left={weekTint.left} width={weekTint.width} />}
           <TodayMarker left={todayIndex * dayWidth} />
 
-          {days.map((day, i) =>
-            i === 0 ? null : (
-              <div
-                key={i}
-                className={day.getDay() === 1 ? styles.weekDivider : styles.divider}
-                style={{ left: i * dayWidth }}
-              />
-            )
-          )}
+          {renderDayDividers()}
 
-          {Array.from({ length: totalLanes + 1 }, (_, n) => (
+          {Array.from({ length: Math.ceil(bodyHeight / ROW_HEIGHT) + 1 }, (_, n) => (
             <div key={n} className={styles.rowDivider} style={{ top: n * ROW_HEIGHT }} />
           ))}
 

@@ -5,6 +5,7 @@ $color-bg-page: #09090b;
 $color-bg-panel: #18181b;
 $color-border-subtle: rgba(255, 255, 255, 0.08);
 $color-border-strong: rgba(255, 255, 255, 0.16);
+$color-week-divider: rgba(255, 255, 255, 0.32); // double $color-border-strong, week-boundary dividers only
 $color-text-muted: #a1a1aa; // weekday label ("Mon")
 $color-text-primary: #ffffff; // date, month label
 $color-text-subtitle: #f4f4f5; // item subtitle
