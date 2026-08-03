@@ -68,6 +68,10 @@
   touch-action: pan-x pan-y;
 }
 
+.viewOnly {
+  cursor: not-allowed;
+}
+
 .divider {
   position: absolute;
   top: 0;

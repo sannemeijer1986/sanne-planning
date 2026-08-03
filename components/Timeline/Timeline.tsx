@@ -481,7 +481,7 @@ export default function Timeline() {
         </div>
 
         <div
-          className={styles.body}
+          className={`${styles.body} ${!editMode ? styles.viewOnly : ""}`}
           ref={bodyRef}
           style={{ width: totalWidth + LOAD_MORE_WIDTH, height: bodyHeight }}
           onPointerDown={handleBodyPointerDown}
@@ -493,17 +493,21 @@ export default function Timeline() {
 
           {renderDayDividers()}
 
-          {hoverCell && (
-            <div
-              className={styles.hoverCell}
-              style={{
-                left: hoverCell.quarter * quarterWidth,
-                width: quarterWidth,
-                top: hoverCell.lane * ROW_HEIGHT + ITEM_GAP,
-                height: ITEM_HEIGHT,
-              }}
-            />
-          )}
+          {hoverCell &&
+            (() => {
+              const rect = insetRect(hoverCell.quarter * quarterWidth, quarterWidth);
+              return (
+                <div
+                  className={styles.hoverCell}
+                  style={{
+                    left: rect.left,
+                    width: rect.width,
+                    top: hoverCell.lane * ROW_HEIGHT + ITEM_GAP,
+                    height: ITEM_HEIGHT,
+                  }}
+                />
+              );
+            })()}
 
           {Array.from({ length: Math.floor(bodyHeight / ROW_HEIGHT) + 1 }, (_, n) => (
             <div key={n} className={styles.rowDivider} style={{ top: n * ROW_HEIGHT }} />
@@ -528,8 +532,8 @@ export default function Timeline() {
                 isDragging={!!preview}
                 left={rect.left}
                 width={rect.width}
-                top={isLeave ? 0 : l * ROW_HEIGHT + ITEM_GAP}
-                height={isLeave ? bodyHeight : undefined}
+                top={isLeave ? ITEM_GAP : l * ROW_HEIGHT + ITEM_GAP}
+                height={isLeave ? bodyHeight - ITEM_GAP * 2 : undefined}
                 onDragStart={handleItemDragStart}
               />
             );

@@ -45,8 +45,8 @@ export default function ItemBlock({
     >
       {isLeave ? (
         <div className={styles.leaveText}>
-          <span className={styles.leaveLabel}>{item.title || "On leave"}</span>
-          {item.subtitle && <span className={styles.leaveSubtitle}>{item.subtitle}</span>}
+          {item.title && <span className={styles.leaveSubtitle}>{item.title}</span>}
+          <span className={styles.leaveLabel}>{item.subtitle || "On leave"}</span>
         </div>
       ) : (
         <div className={styles.text}>

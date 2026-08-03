@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { PointerEvent as ReactPointerEvent } from "react";
+import { useSnackbar } from "@/components/Snackbar/SnackbarProvider";
 import { NOTES_MAX_LENGTH } from "@/types/planning";
 import styles from "./NotesWidget.module.scss";
 
@@ -35,12 +37,13 @@ interface NotesWidgetProps {
 }
 
 export default function NotesWidget({ editMode }: NotesWidgetProps) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
   const [notes, setNotes] = useState("");
   const [loaded, setLoaded] = useState(false);
   const [saved, setSaved] = useState(false);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const savedIndicatorRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { showSnackbar } = useSnackbar();
 
   useEffect(() => {
     fetch("/api/notes")
@@ -71,27 +74,37 @@ export default function NotesWidget({ editMode }: NotesWidgetProps) {
     if (editMode) scheduleSave(value);
   }
 
+  function handleTextareaPointerDown(e: ReactPointerEvent<HTMLTextAreaElement>) {
+    if (!editMode) {
+      e.preventDefault();
+      showSnackbar("Can't edit in view mode", { variant: "error" });
+    }
+  }
+
   return (
     <div className={styles.wrapper}>
       {open && (
         <div className={styles.panel}>
           <div className={styles.header}>
             <span className={styles.title}>Notes</span>
-            {saved && <span className={styles.saved}>Saved</span>}
-            <button
-              type="button"
-              className={styles.closeButton}
-              onClick={() => setOpen(false)}
-              aria-label="Close notes"
-              title="Close notes"
-            >
-              <CloseIcon />
-            </button>
+            <div className={styles.headerRight}>
+              {saved && <span className={styles.saved}>Saved</span>}
+              <button
+                type="button"
+                className={styles.closeButton}
+                onClick={() => setOpen(false)}
+                aria-label="Close notes"
+                title="Close notes"
+              >
+                <CloseIcon />
+              </button>
+            </div>
           </div>
           <textarea
             className={styles.textarea}
             value={notes}
             onChange={(e) => handleChange(e.target.value)}
+            onPointerDown={handleTextareaPointerDown}
             readOnly={!editMode}
             placeholder={editMode ? "Leave a note…" : "No notes yet."}
             maxLength={NOTES_MAX_LENGTH}

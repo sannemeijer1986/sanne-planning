@@ -45,6 +45,7 @@
 .draft {
   background: transparent;
   border: 2px dashed vars.$color-today;
+  padding: 0;
 }
 
 .leave {
@@ -77,7 +78,7 @@
 
 .leaveLabel {
   color: vars.$color-text-subtitle;
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;

@@ -52,9 +52,10 @@ export default function ItemEditorPopover({
   }
 
   function handleSave() {
-    const finalTitle = title.trim() || (kind === "leave" ? "On leave" : "");
-    if (!finalTitle && !subtitle.trim()) return;
-    close(() => onSave({ kind, title: finalTitle, subtitle: subtitle.trim(), color }));
+    const finalTitle = title.trim();
+    const finalSubtitle = subtitle.trim() || (kind === "leave" ? "On leave" : "");
+    if (!finalTitle && !finalSubtitle) return;
+    close(() => onSave({ kind, title: finalTitle, subtitle: finalSubtitle, color }));
   }
 
   function handleCancel() {
@@ -94,23 +95,23 @@ export default function ItemEditorPopover({
         </div>
 
         <label className={styles.field}>
-          <span className={styles.label}>Title</span>
+          <span className={styles.label}>Label</span>
           <input
             className={styles.input}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder={kind === "leave" ? "On leave" : ""}
             maxLength={80}
             autoFocus
           />
         </label>
 
         <label className={styles.field}>
-          <span className={styles.label}>Subtitle</span>
+          <span className={styles.label}>Title</span>
           <input
             className={styles.input}
             value={subtitle}
             onChange={(e) => setSubtitle(e.target.value)}
+            placeholder={kind === "leave" ? "On leave" : ""}
             maxLength={120}
           />
         </label>
