@@ -39,6 +39,14 @@ function insetRect(left: number, width: number): { left: number; width: number }
   const inset = Math.min(H_GAP / 2, Math.max(width - H_GAP_MIN_WIDTH, 0) / 2);
   return { left: left + inset, width: width - inset * 2 };
 }
+
+// "On leave" bands bleed slightly past their exact day boundaries so they
+// visually overlay the day columns/dividers instead of aligning flush.
+const LEAVE_BLEED = 4;
+
+function bleedRect(left: number, width: number): { left: number; width: number } {
+  return { left: left - LEAVE_BLEED, width: width + LEAVE_BLEED * 2 };
+}
 // Mirrors $month-label-height in styles/_variables.scss.
 const MONTH_LABEL_HEIGHT = 72;
 // Mirrors $month-label-height + $column-header-height in styles/_variables.scss.
@@ -436,7 +444,7 @@ export default function Timeline() {
 
           {renderDayDividers()}
 
-          {Array.from({ length: Math.ceil(bodyHeight / ROW_HEIGHT) + 1 }, (_, n) => (
+          {Array.from({ length: Math.floor(bodyHeight / ROW_HEIGHT) + 1 }, (_, n) => (
             <div key={n} className={styles.rowDivider} style={{ top: n * ROW_HEIGHT }} />
           ))}
 
@@ -451,7 +459,7 @@ export default function Timeline() {
             const l = preview ? preview.lane : lane;
             const isLeave = item.kind === "leave";
             const rect = isLeave
-              ? { left: s * quarterWidth, width: (e - s + 1) * quarterWidth }
+              ? bleedRect(s * quarterWidth, (e - s + 1) * quarterWidth)
               : insetRect(s * quarterWidth, (e - s + 1) * quarterWidth);
             return (
               <ItemBlock

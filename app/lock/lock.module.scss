@@ -1,0 +1,70 @@
+@use "@/styles/variables" as vars;
+
+.page {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: vars.$color-bg-page;
+  padding: 16px;
+}
+
+.panel {
+  background: vars.$color-bg-panel;
+  border: 1px solid vars.$color-border-strong;
+  border-radius: 14px;
+  padding: 28px;
+  width: 100%;
+  max-width: 340px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  text-align: center;
+}
+
+.title {
+  color: vars.$color-text-primary;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.subtitle {
+  color: vars.$color-text-muted;
+  font-size: 13px;
+}
+
+.input {
+  background: vars.$color-bg-page;
+  border: 1px solid vars.$color-border-strong;
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: vars.$color-text-primary;
+  font-size: 14px;
+  text-align: center;
+
+  &:focus {
+    outline: 2px solid vars.$color-today;
+    outline-offset: 1px;
+  }
+}
+
+.error {
+  color: #f87171;
+  font-size: 12px;
+}
+
+.button {
+  background: vars.$color-today;
+  color: #0a1a33;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}

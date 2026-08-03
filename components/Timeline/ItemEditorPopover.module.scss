@@ -1,6 +1,46 @@
 @use "sass:map";
 @use "@/styles/variables" as vars;
 
+@keyframes backdropIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes backdropOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes panelIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes panelOut {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95) translateY(6px);
+  }
+}
+
 .backdrop {
   position: fixed;
   inset: 0;
@@ -10,6 +50,11 @@
   justify-content: center;
   z-index: 100;
   padding: 16px;
+  animation: backdropIn 0.16s ease-out;
+}
+
+.backdropClosing {
+  animation: backdropOut 0.15s ease-in forwards;
 }
 
 .panel {
@@ -22,6 +67,11 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
+  animation: panelIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.panelClosing {
+  animation: panelOut 0.15s ease-in forwards;
 }
 
 .dates {

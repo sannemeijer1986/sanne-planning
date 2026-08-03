@@ -7,6 +7,9 @@ import { COLOR_SWATCHES } from "@/lib/colors";
 import type { ItemColor, ItemKind } from "@/types/planning";
 import styles from "./ItemEditorPopover.module.scss";
 
+// Matches the exit animation duration in ItemEditorPopover.module.scss.
+const CLOSE_ANIMATION_MS = 150;
+
 interface ItemEditorPopoverProps {
   mode: "create" | "edit";
   startDate: string;
@@ -36,21 +39,41 @@ export default function ItemEditorPopover({
   const [title, setTitle] = useState(initialTitle);
   const [subtitle, setSubtitle] = useState(initialSubtitle);
   const [color, setColor] = useState<ItemColor>(initialColor);
+  const [closing, setClosing] = useState(false);
 
   const dateRangeLabel =
     startDate === endDate
       ? format(parseISODate(startDate), "EEE, MMM d")
       : `${format(parseISODate(startDate), "EEE, MMM d")} – ${format(parseISODate(endDate), "EEE, MMM d")}`;
 
+  function close(action: () => void) {
+    setClosing(true);
+    setTimeout(action, CLOSE_ANIMATION_MS);
+  }
+
   function handleSave() {
     const finalTitle = title.trim() || (kind === "leave" ? "On leave" : "");
     if (!finalTitle && !subtitle.trim()) return;
-    onSave({ kind, title: finalTitle, subtitle: kind === "leave" ? "" : subtitle.trim(), color });
+    close(() => onSave({ kind, title: finalTitle, subtitle: subtitle.trim(), color }));
+  }
+
+  function handleCancel() {
+    close(onCancel);
+  }
+
+  function handleDelete() {
+    if (onDelete) close(onDelete);
   }
 
   return (
-    <div className={styles.backdrop} onClick={onCancel}>
-      <div className={styles.panel} onClick={(e) => e.stopPropagation()}>
+    <div
+      className={`${styles.backdrop} ${closing ? styles.backdropClosing : ""}`}
+      onClick={handleCancel}
+    >
+      <div
+        className={`${styles.panel} ${closing ? styles.panelClosing : ""}`}
+        onClick={(e) => e.stopPropagation()}
+      >
         <span className={styles.dates}>{dateRangeLabel}</span>
 
         <div className={styles.kindToggle}>
@@ -82,47 +105,45 @@ export default function ItemEditorPopover({
           />
         </label>
 
-        {kind === "work" && (
-          <>
-            <label className={styles.field}>
-              <span className={styles.label}>Subtitle</span>
-              <input
-                className={styles.input}
-                value={subtitle}
-                onChange={(e) => setSubtitle(e.target.value)}
-                maxLength={120}
-              />
-            </label>
+        <label className={styles.field}>
+          <span className={styles.label}>Subtitle</span>
+          <input
+            className={styles.input}
+            value={subtitle}
+            onChange={(e) => setSubtitle(e.target.value)}
+            maxLength={120}
+          />
+        </label>
 
-            <div className={styles.field}>
-              <span className={styles.label}>Color</span>
-              <div className={styles.swatches}>
-                {COLOR_SWATCHES.map((swatch) => (
-                  <button
-                    key={swatch.value}
-                    type="button"
-                    aria-label={swatch.label}
-                    className={[
-                      styles.swatch,
-                      styles[`color-${swatch.value}`],
-                      color === swatch.value ? styles.selected : "",
-                    ].join(" ")}
-                    onClick={() => setColor(swatch.value)}
-                  />
-                ))}
-              </div>
+        {kind === "work" && (
+          <div className={styles.field}>
+            <span className={styles.label}>Color</span>
+            <div className={styles.swatches}>
+              {COLOR_SWATCHES.map((swatch) => (
+                <button
+                  key={swatch.value}
+                  type="button"
+                  aria-label={swatch.label}
+                  className={[
+                    styles.swatch,
+                    styles[`color-${swatch.value}`],
+                    color === swatch.value ? styles.selected : "",
+                  ].join(" ")}
+                  onClick={() => setColor(swatch.value)}
+                />
+              ))}
             </div>
-          </>
+          </div>
         )}
 
         <div className={styles.actions}>
           {mode === "edit" && onDelete && (
-            <button type="button" className={`${styles.button} ${styles.danger}`} onClick={onDelete}>
+            <button type="button" className={`${styles.button} ${styles.danger}`} onClick={handleDelete}>
               Delete
             </button>
           )}
           <div className={styles.actionsRight}>
-            <button type="button" className={`${styles.button} ${styles.secondary}`} onClick={onCancel}>
+            <button type="button" className={`${styles.button} ${styles.secondary}`} onClick={handleCancel}>
               Cancel
             </button>
             <button type="button" className={`${styles.button} ${styles.primary}`} onClick={handleSave}>
