@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isViewAuthorized } from "@/lib/auth";
 
-// Reachable without the view-session cookie: the lock page itself and the
-// endpoint it posts the password to.
-const PUBLIC_PATHS = new Set(["/lock", "/api/auth/view-login"]);
+// Reachable without the view-session cookie: the lock page itself, the
+// endpoint it posts the password to, and the backup endpoint (which Vercel
+// Cron calls directly and which enforces its own auth — a cron secret or an
+// edit session — inside the route handler).
+const PUBLIC_PATHS = new Set(["/lock", "/api/auth/view-login", "/api/backup"]);
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

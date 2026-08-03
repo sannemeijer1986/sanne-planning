@@ -46,6 +46,10 @@
 }
 
 .error {
-  border-color: rgba(248, 113, 113, 0.5);
-  color: #f87171;
+  background: #dc2626;
+  border-color: transparent;
+  color: #ffffff;
+  font-size: 19px;
+  padding: 18px 30px;
+  box-shadow: 0 10px 30px rgba(220, 38, 38, 0.45);
 }

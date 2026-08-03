@@ -13,6 +13,7 @@ import {
 import { QUARTERS_PER_DAY, type ItemColor, type ItemKind, type TimelineItem } from "@/types/planning";
 import Header from "@/components/Header";
 import EditModeToggle from "@/components/EditModeToggle";
+import NotesWidget from "@/components/NotesWidget";
 import { useSnackbar } from "@/components/Snackbar/SnackbarProvider";
 import DayColumn from "./DayColumn";
 import MonthLabel from "./MonthLabel";
@@ -40,14 +41,6 @@ const H_GAP_MIN_WIDTH = 12;
 function insetRect(left: number, width: number): { left: number; width: number } {
   const inset = Math.min(H_GAP / 2, Math.max(width - H_GAP_MIN_WIDTH, 0) / 2);
   return { left: left + inset, width: width - inset * 2 };
-}
-
-// "On leave" bands bleed slightly past their exact day boundaries so they
-// visually overlay the day columns/dividers instead of aligning flush.
-const LEAVE_BLEED = 4;
-
-function bleedRect(left: number, width: number): { left: number; width: number } {
-  return { left: left - LEAVE_BLEED, width: width + LEAVE_BLEED * 2 };
 }
 // Mirrors $month-label-height in styles/_variables.scss.
 const MONTH_LABEL_HEIGHT = 80;
@@ -434,14 +427,29 @@ export default function Timeline() {
     setEditMode(false);
   }
 
+  async function handleBackup() {
+    const res = await fetch("/api/backup", { method: "POST" }).catch(() => null);
+    if (res?.ok) {
+      showSnackbar("Backup saved");
+    } else {
+      showSnackbar("Backup failed", { variant: "error" });
+    }
+  }
+
   return (
     <div className={styles.page}>
       <Header>
         <button type="button" className={styles.todayButton} onClick={scrollToToday}>
           Today
         </button>
+        {editMode && (
+          <button type="button" className={styles.todayButton} onClick={handleBackup}>
+            Backup now
+          </button>
+        )}
         <EditModeToggle editMode={editMode} onLogin={handleLogin} onLogout={handleLogout} />
       </Header>
+      <NotesWidget editMode={editMode} />
 
       <div className={styles.scroll} ref={scrollRef}>
         <div className={styles.sticky} style={{ width: totalWidth }}>
@@ -511,9 +519,7 @@ export default function Timeline() {
             const e = preview ? preview.endIndex : endIndex;
             const l = preview ? preview.lane : lane;
             const isLeave = item.kind === "leave";
-            const rect = isLeave
-              ? bleedRect(s * quarterWidth, (e - s + 1) * quarterWidth)
-              : insetRect(s * quarterWidth, (e - s + 1) * quarterWidth);
+            const rect = insetRect(s * quarterWidth, (e - s + 1) * quarterWidth);
             return (
               <ItemBlock
                 key={item.id}

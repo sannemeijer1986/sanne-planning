@@ -41,7 +41,10 @@ export interface TimelineItem {
 
 export interface PlanningData {
   items: TimelineItem[];
+  notes?: string;
 }
+
+export const NOTES_MAX_LENGTH = 4000;
 
 export type CreateItemInput = Pick<
   TimelineItem,

@@ -116,6 +116,10 @@
   gap: 6px;
 }
 
+.fieldHidden {
+  visibility: hidden;
+}
+
 .label {
   color: vars.$color-text-muted;
   font-size: 13px;

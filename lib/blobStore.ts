@@ -32,3 +32,14 @@ export async function savePlanningData(data: PlanningData): Promise<void> {
     allowOverwrite: true,
   });
 }
+
+export async function backupPlanningData(data: PlanningData): Promise<string> {
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const pathname = `planning/backups/${stamp}.json`;
+  await put(pathname, JSON.stringify(data), {
+    access: "private",
+    contentType: "application/json",
+    addRandomSuffix: false,
+  });
+  return pathname;
+}

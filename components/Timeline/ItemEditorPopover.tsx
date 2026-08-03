@@ -115,26 +115,24 @@ export default function ItemEditorPopover({
           />
         </label>
 
-        {kind === "work" && (
-          <div className={styles.field}>
-            <span className={styles.label}>Color</span>
-            <div className={styles.swatches}>
-              {COLOR_SWATCHES.map((swatch) => (
-                <button
-                  key={swatch.value}
-                  type="button"
-                  aria-label={swatch.label}
-                  className={[
-                    styles.swatch,
-                    styles[`color-${swatch.value}`],
-                    color === swatch.value ? styles.selected : "",
-                  ].join(" ")}
-                  onClick={() => setColor(swatch.value)}
-                />
-              ))}
-            </div>
+        <div className={`${styles.field} ${kind !== "work" ? styles.fieldHidden : ""}`}>
+          <span className={styles.label}>Color</span>
+          <div className={styles.swatches}>
+            {COLOR_SWATCHES.map((swatch) => (
+              <button
+                key={swatch.value}
+                type="button"
+                aria-label={swatch.label}
+                className={[
+                  styles.swatch,
+                  styles[`color-${swatch.value}`],
+                  color === swatch.value ? styles.selected : "",
+                ].join(" ")}
+                onClick={() => setColor(swatch.value)}
+              />
+            ))}
           </div>
-        )}
+        </div>
 
         <div className={styles.actions}>
           {mode === "edit" && onDelete && (
