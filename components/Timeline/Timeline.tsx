@@ -11,6 +11,7 @@ import {
   toISODate,
 } from "@/lib/dates";
 import { QUARTERS_PER_DAY, type ItemColor, type ItemKind, type TimelineItem } from "@/types/planning";
+import Header from "@/components/Header";
 import EditModeToggle from "@/components/EditModeToggle";
 import DayColumn from "./DayColumn";
 import MonthLabel from "./MonthLabel";
@@ -87,12 +88,20 @@ export default function Timeline() {
     endIndex: number;
     lane: number;
   } | null>(null);
+  const [editHint, setEditHint] = useState<{ x: number; y: number } | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const dragStateRef = useRef<DragState | null>(null);
   const hasScrolledRef = useRef(false);
+  const editHintTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const today = useMemo(() => new Date(), []);
+
+  function showEditHint(x: number, y: number) {
+    setEditHint({ x, y });
+    if (editHintTimeoutRef.current) clearTimeout(editHintTimeoutRef.current);
+    editHintTimeoutRef.current = setTimeout(() => setEditHint(null), 1500);
+  }
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 640px)");
@@ -299,7 +308,10 @@ export default function Timeline() {
   }
 
   function handleBodyPointerDown(e: ReactPointerEvent<HTMLDivElement>) {
-    if (!editMode) return;
+    if (!editMode) {
+      showEditHint(e.clientX, e.clientY);
+      return;
+    }
     const idx = quarterFromClientX(e.clientX);
     const lane = laneFromClientY(e.clientY);
     dragStateRef.current = {
@@ -388,7 +400,7 @@ export default function Timeline() {
     await fetch(`/api/items/${id}`, { method: "DELETE" });
   }
 
-  async function handleLogin(password: string): Promise<boolean> {
+  async function handleLogin(password: string): Promise<{ ok: boolean; message?: string }> {
     const res = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -396,9 +408,10 @@ export default function Timeline() {
     });
     if (res.ok) {
       setEditMode(true);
-      return true;
+      return { ok: true };
     }
-    return false;
+    const data = await res.json().catch(() => null);
+    return { ok: false, message: data?.error };
   }
 
   async function handleLogout() {
@@ -408,10 +421,18 @@ export default function Timeline() {
 
   return (
     <div className={styles.page}>
-      <EditModeToggle editMode={editMode} onLogin={handleLogin} onLogout={handleLogout} />
-      <button type="button" className={styles.todayButton} onClick={scrollToToday}>
-        Today
-      </button>
+      <Header>
+        <button type="button" className={styles.todayButton} onClick={scrollToToday}>
+          Today
+        </button>
+        <EditModeToggle editMode={editMode} onLogin={handleLogin} onLogout={handleLogout} />
+      </Header>
+
+      {editHint && (
+        <div className={styles.editHint} style={{ left: editHint.x, top: editHint.y }}>
+          Can&apos;t edit in view mode
+        </div>
+      )}
 
       <div className={styles.scroll} ref={scrollRef}>
         <div className={styles.sticky} style={{ width: totalWidth }}>

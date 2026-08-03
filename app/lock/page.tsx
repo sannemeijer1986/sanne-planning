@@ -6,13 +6,13 @@ import styles from "./lock.module.scss";
 
 export default function LockPage() {
   const [password, setPassword] = useState("");
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setSubmitting(true);
-    setError(false);
+    setError(null);
     const res = await fetch("/api/auth/view-login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -23,7 +23,8 @@ export default function LockPage() {
       return;
     }
     setSubmitting(false);
-    setError(true);
+    const data = await res.json().catch(() => null);
+    setError(data?.error || "Wrong password");
   }
 
   return (
@@ -39,7 +40,7 @@ export default function LockPage() {
           placeholder="Password"
           autoFocus
         />
-        {error && <span className={styles.error}>Wrong password</span>}
+        {error && <span className={styles.error}>{error}</span>}
         <button type="submit" className={styles.button} disabled={submitting}>
           {submitting ? "Checking…" : "Continue"}
         </button>
