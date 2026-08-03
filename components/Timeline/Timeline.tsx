@@ -13,6 +13,7 @@ import {
 import { QUARTERS_PER_DAY, type ItemColor, type ItemKind, type TimelineItem } from "@/types/planning";
 import Header from "@/components/Header";
 import EditModeToggle from "@/components/EditModeToggle";
+import { useSnackbar } from "@/components/Snackbar/SnackbarProvider";
 import DayColumn from "./DayColumn";
 import MonthLabel from "./MonthLabel";
 import TodayMarker from "./TodayMarker";
@@ -26,15 +27,15 @@ const MONTHS_BACK = 6;
 const INITIAL_MONTHS_FORWARD = 12;
 const LOAD_MORE_MONTHS = 3;
 const MIN_LANES = 6;
-const ITEM_HEIGHT = 56;
-const ITEM_GAP = 6;
+const ITEM_HEIGHT = 60;
+const ITEM_GAP = 8;
 const ROW_HEIGHT = ITEM_HEIGHT + ITEM_GAP;
 const LOAD_MORE_WIDTH = 140;
 // Visual-only breathing room between blocks on the same row. Insets the
 // rendered box symmetrically; the underlying quarter-day start/end (and thus
 // drag/resize snapping) is untouched.
-const H_GAP = 6;
-const H_GAP_MIN_WIDTH = 10;
+const H_GAP = 8;
+const H_GAP_MIN_WIDTH = 12;
 
 function insetRect(left: number, width: number): { left: number; width: number } {
   const inset = Math.min(H_GAP / 2, Math.max(width - H_GAP_MIN_WIDTH, 0) / 2);
@@ -49,9 +50,11 @@ function bleedRect(left: number, width: number): { left: number; width: number }
   return { left: left - LEAVE_BLEED, width: width + LEAVE_BLEED * 2 };
 }
 // Mirrors $month-label-height in styles/_variables.scss.
-const MONTH_LABEL_HEIGHT = 72;
+const MONTH_LABEL_HEIGHT = 80;
+// Mirrors $column-header-height in styles/_variables.scss.
+const DAY_ROW_HEIGHT = 96;
 // Mirrors $month-label-height + $column-header-height in styles/_variables.scss.
-const HEADER_HEIGHT = MONTH_LABEL_HEIGHT + 88;
+const HEADER_HEIGHT = MONTH_LABEL_HEIGHT + DAY_ROW_HEIGHT;
 
 interface DraftRange {
   startIndex: number; // quarter-day index
@@ -77,7 +80,7 @@ export default function Timeline() {
   const [items, setItems] = useState<TimelineItem[]>([]);
   const [editMode, setEditMode] = useState(false);
   const [monthsForward, setMonthsForward] = useState(INITIAL_MONTHS_FORWARD);
-  const [dayWidth, setDayWidth] = useState(120);
+  const [dayWidth, setDayWidth] = useState(132);
   const [dayWidthReady, setDayWidthReady] = useState(false);
   const [viewportHeight, setViewportHeight] = useState(0);
   const [creatingDraft, setCreatingDraft] = useState<DraftRange | null>(null);
@@ -88,24 +91,18 @@ export default function Timeline() {
     endIndex: number;
     lane: number;
   } | null>(null);
-  const [editHint, setEditHint] = useState<{ x: number; y: number } | null>(null);
+  const [hoverCell, setHoverCell] = useState<{ quarter: number; lane: number } | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const dragStateRef = useRef<DragState | null>(null);
   const hasScrolledRef = useRef(false);
-  const editHintTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const today = useMemo(() => new Date(), []);
-
-  function showEditHint(x: number, y: number) {
-    setEditHint({ x, y });
-    if (editHintTimeoutRef.current) clearTimeout(editHintTimeoutRef.current);
-    editHintTimeoutRef.current = setTimeout(() => setEditHint(null), 1500);
-  }
+  const { showSnackbar } = useSnackbar();
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 640px)");
-    const update = () => setDayWidth(mq.matches ? 56 : 120);
+    const update = () => setDayWidth(mq.matches ? 60 : 132);
     update();
     setDayWidthReady(true);
     mq.addEventListener("change", update);
@@ -309,7 +306,7 @@ export default function Timeline() {
 
   function handleBodyPointerDown(e: ReactPointerEvent<HTMLDivElement>) {
     if (!editMode) {
-      showEditHint(e.clientX, e.clientY);
+      showSnackbar("Can't edit in view mode", { variant: "error" });
       return;
     }
     const idx = quarterFromClientX(e.clientX);
@@ -325,8 +322,26 @@ export default function Timeline() {
       moved: false,
     };
     setCreatingDraft({ startIndex: idx, endIndex: idx, lane });
+    setHoverCell(null);
     window.addEventListener("pointermove", handleWindowPointerMove);
     window.addEventListener("pointerup", handleWindowPointerUp);
+  }
+
+  function handleBodyPointerMove(e: ReactPointerEvent<HTMLDivElement>) {
+    if (!editMode || dragStateRef.current || creatingDraft || editingItem) {
+      if (hoverCell) setHoverCell(null);
+      return;
+    }
+    const target = e.target as HTMLElement;
+    if (target.closest(`.${itemBlockStyles.item}`)) {
+      if (hoverCell) setHoverCell(null);
+      return;
+    }
+    setHoverCell({ quarter: quarterFromClientX(e.clientX), lane: laneFromClientY(e.clientY) });
+  }
+
+  function handleBodyPointerLeave() {
+    setHoverCell(null);
   }
 
   function handleItemDragStart(item: TimelineItem, mode: DragMode, e: ReactPointerEvent) {
@@ -428,14 +443,17 @@ export default function Timeline() {
         <EditModeToggle editMode={editMode} onLogin={handleLogin} onLogout={handleLogout} />
       </Header>
 
-      {editHint && (
-        <div className={styles.editHint} style={{ left: editHint.x, top: editHint.y }}>
-          Can&apos;t edit in view mode
-        </div>
-      )}
-
       <div className={styles.scroll} ref={scrollRef}>
         <div className={styles.sticky} style={{ width: totalWidth }}>
+          {weekTint && (
+            <CurrentWeekTint
+              left={weekTint.left}
+              width={weekTint.width}
+              variant="header"
+              top={MONTH_LABEL_HEIGHT}
+            />
+          )}
+          <TodayMarker left={todayIndex * dayWidth} variant="header" top={MONTH_LABEL_HEIGHT} />
           {renderDayDividers(MONTH_LABEL_HEIGHT)}
           <div className={styles.monthRow} style={{ width: totalWidth }}>
             {months.map((m) => (
@@ -459,11 +477,25 @@ export default function Timeline() {
           ref={bodyRef}
           style={{ width: totalWidth + LOAD_MORE_WIDTH, height: bodyHeight }}
           onPointerDown={handleBodyPointerDown}
+          onPointerMove={handleBodyPointerMove}
+          onPointerLeave={handleBodyPointerLeave}
         >
           {weekTint && <CurrentWeekTint left={weekTint.left} width={weekTint.width} />}
           <TodayMarker left={todayIndex * dayWidth} />
 
           {renderDayDividers()}
+
+          {hoverCell && (
+            <div
+              className={styles.hoverCell}
+              style={{
+                left: hoverCell.quarter * quarterWidth,
+                width: quarterWidth,
+                top: hoverCell.lane * ROW_HEIGHT + ITEM_GAP,
+                height: ITEM_HEIGHT,
+              }}
+            />
+          )}
 
           {Array.from({ length: Math.floor(bodyHeight / ROW_HEIGHT) + 1 }, (_, n) => (
             <div key={n} className={styles.rowDivider} style={{ top: n * ROW_HEIGHT }} />

@@ -1,0 +1,51 @@
+@use "@/styles/variables" as vars;
+
+@keyframes snackbarIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -8px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@keyframes snackbarOut {
+  from {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -8px);
+  }
+}
+
+.snackbar {
+  position: fixed;
+  left: 50%;
+  top: 24px;
+  transform: translate(-50%, 0);
+  z-index: 300;
+  background: vars.$color-bg-elevated;
+  border: 1px solid vars.$color-border-strong;
+  color: vars.$color-text-primary;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 14px 24px;
+  border-radius: 999px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  white-space: nowrap;
+  pointer-events: none;
+  animation: snackbarIn 0.16s ease-out;
+
+  &.closing {
+    animation: snackbarOut 0.18s ease-in forwards;
+  }
+}
+
+.error {
+  border-color: rgba(248, 113, 113, 0.5);
+  color: #f87171;
+}

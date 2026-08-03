@@ -2,17 +2,17 @@
 
 import { useState } from "react";
 import type { FormEvent } from "react";
+import { useSnackbar } from "@/components/Snackbar/SnackbarProvider";
 import styles from "./lock.module.scss";
 
 export default function LockPage() {
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const { showSnackbar } = useSnackbar();
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setSubmitting(true);
-    setError(null);
     const res = await fetch("/api/auth/view-login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -24,7 +24,7 @@ export default function LockPage() {
     }
     setSubmitting(false);
     const data = await res.json().catch(() => null);
-    setError(data?.error || "Wrong password");
+    showSnackbar(data?.error || "Wrong password", { variant: "error" });
   }
 
   return (
@@ -40,7 +40,6 @@ export default function LockPage() {
           placeholder="Password"
           autoFocus
         />
-        {error && <span className={styles.error}>{error}</span>}
         <button type="submit" className={styles.button} disabled={submitting}>
           {submitting ? "Checking…" : "Continue"}
         </button>

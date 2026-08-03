@@ -60,13 +60,13 @@
 .panel {
   background: vars.$color-bg-panel;
   border: 1px solid vars.$color-border-strong;
-  border-radius: 14px;
-  padding: 20px;
+  border-radius: 16px;
+  padding: 24px;
   width: 100%;
-  max-width: 360px;
+  max-width: 400px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
   animation: panelIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -76,7 +76,7 @@
 
 .dates {
   color: vars.$color-text-muted;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .kindToggle {
@@ -90,12 +90,12 @@
 
 .kindOption {
   flex: 1;
-  padding: 6px 10px;
+  padding: 8px 12px;
   border-radius: 6px;
   border: none;
   background: transparent;
   color: vars.$color-text-muted;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
 }
@@ -118,7 +118,7 @@
 
 .label {
   color: vars.$color-text-muted;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
 }
 
@@ -126,9 +126,9 @@
   background: vars.$color-bg-page;
   border: 1px solid vars.$color-border-strong;
   border-radius: 8px;
-  padding: 8px 10px;
+  padding: 10px 12px;
   color: vars.$color-text-primary;
-  font-size: 14px;
+  font-size: 15px;
 
   &:focus {
     outline: 2px solid vars.$color-today;
@@ -143,8 +143,8 @@
 }
 
 .swatch {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   border: 2px solid transparent;
   cursor: pointer;
@@ -175,9 +175,9 @@
 }
 
 .button {
-  padding: 8px 14px;
+  padding: 10px 16px;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   border: 1px solid transparent;
   cursor: pointer;

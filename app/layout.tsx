@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { SnackbarProvider } from "@/components/Snackbar/SnackbarProvider";
 import "@/styles/globals.scss";
 
 const inter = Inter({
@@ -19,7 +20,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={inter.variable}>
-      <body>{children}</body>
+      <body>
+        <SnackbarProvider>{children}</SnackbarProvider>
+      </body>
     </html>
   );
 }

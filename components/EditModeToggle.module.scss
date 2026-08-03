@@ -8,7 +8,7 @@
 }
 
 .label {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: vars.$color-text-muted;
   white-space: nowrap;
@@ -18,8 +18,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  width: 34px;
+  height: 34px;
   flex-shrink: 0;
   border-radius: 999px;
   border: 1px solid vars.$color-border-strong;
@@ -28,13 +28,8 @@
   cursor: pointer;
 
   &:hover {
-    border-color: vars.$color-today;
+    border-color: rgba(255, 255, 255, 0.5);
   }
-}
-
-.editing {
-  border-color: vars.$color-today;
-  color: vars.$color-today;
 }
 
 .form {
@@ -44,15 +39,15 @@
   background: vars.$color-bg-page;
   border: 1px solid vars.$color-border-strong;
   border-radius: 999px;
-  padding: 6px 6px 6px 12px;
+  padding: 7px 7px 7px 14px;
 }
 
 .input {
   background: transparent;
   border: none;
   color: vars.$color-text-primary;
-  font-size: 13px;
-  width: 110px;
+  font-size: 14px;
+  width: 120px;
 
   &:focus {
     outline: none;
@@ -60,13 +55,13 @@
 }
 
 .submit {
-  padding: 6px 12px;
+  padding: 7px 14px;
   border-radius: 999px;
   border: none;
   background: vars.$color-today;
   color: #0a1a33;
   font-weight: 600;
-  font-size: 13px;
+  font-size: 14px;
   cursor: pointer;
   white-space: nowrap;
 }
@@ -75,8 +70,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: 30px;
+  height: 30px;
   flex-shrink: 0;
   border-radius: 999px;
   border: none;
@@ -89,12 +84,3 @@
   }
 }
 
-.error {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  margin-top: 6px;
-  color: #f87171;
-  font-size: 12px;
-  white-space: nowrap;
-}

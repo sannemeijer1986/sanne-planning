@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSnackbar } from "@/components/Snackbar/SnackbarProvider";
 import styles from "./EditModeToggle.module.scss";
 
 interface EditModeToggleProps {
@@ -11,7 +12,7 @@ interface EditModeToggleProps {
 
 function LockIcon({ locked }: { locked: boolean }) {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
       <rect x="5" y="11" width="14" height="10" rx="2" stroke="currentColor" strokeWidth="2" />
       {locked ? (
         <path d="M8 11V7a4 4 0 0 1 8 0v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -24,7 +25,7 @@ function LockIcon({ locked }: { locked: boolean }) {
 
 function CloseIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
@@ -33,27 +34,25 @@ function CloseIcon() {
 export default function EditModeToggle({ editMode, onLogin, onLogout }: EditModeToggleProps) {
   const [showForm, setShowForm] = useState(false);
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const { showSnackbar } = useSnackbar();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
-    setError(null);
     const result = await onLogin(password);
     setSubmitting(false);
     if (result.ok) {
       setShowForm(false);
       setPassword("");
     } else {
-      setError(result.message || "Wrong password");
+      showSnackbar(result.message || "Wrong password", { variant: "error" });
     }
   }
 
   function handleCloseForm() {
     setShowForm(false);
     setPassword("");
-    setError(null);
   }
 
   if (editMode) {
@@ -62,7 +61,7 @@ export default function EditModeToggle({ editMode, onLogin, onLogout }: EditMode
         <span className={styles.label}>Editing</span>
         <button
           type="button"
-          className={`${styles.iconButton} ${styles.editing}`}
+          className={styles.iconButton}
           onClick={() => onLogout()}
           aria-label="Lock"
           title="Lock"
@@ -112,7 +111,6 @@ export default function EditModeToggle({ editMode, onLogin, onLogout }: EditMode
           </button>
         </>
       )}
-      {error && <span className={styles.error}>{error}</span>}
     </div>
   );
 }

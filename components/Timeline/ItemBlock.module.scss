@@ -11,7 +11,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 10px;
+  padding: 0 12px;
   overflow: hidden;
   user-select: none;
   z-index: 1;
@@ -24,6 +24,11 @@
   &:active {
     cursor: grabbing;
   }
+}
+
+.item:not(.draft):hover {
+  filter: brightness(1.15);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.45);
 }
 
 .dragging {
@@ -56,7 +61,7 @@
 .leaveSubtitle {
   color: vars.$color-text-subtitle;
   opacity: 0.75;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
@@ -66,7 +71,7 @@
 
 .leaveLabel {
   color: vars.$color-text-subtitle;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -96,12 +101,12 @@
 
 .title {
   opacity: 0.6;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
 }
 
 .subtitle {
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
 }
 

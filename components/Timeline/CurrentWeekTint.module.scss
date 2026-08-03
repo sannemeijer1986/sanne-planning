@@ -8,3 +8,11 @@
   pointer-events: none;
   z-index: 0;
 }
+
+.tintHeader {
+  position: absolute;
+  bottom: 0;
+  background: vars.$color-week-tint;
+  pointer-events: none;
+  z-index: 0;
+}

@@ -5,7 +5,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 32px 12px 20px;
+  padding: 18px 40px 18px 28px;
   background: vars.$color-bg-panel;
   border-bottom: 1px solid vars.$color-border-strong;
   gap: 16px;
@@ -14,13 +14,13 @@
 .identity {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   min-width: 0;
 }
 
 .avatar {
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   object-fit: cover;
   flex-shrink: 0;
@@ -30,12 +30,13 @@
 .text {
   display: flex;
   flex-direction: column;
+  gap: 2px;
   min-width: 0;
 }
 
 .eyebrow {
   color: vars.$color-text-muted;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -43,7 +44,7 @@
 
 .title {
   color: vars.$color-text-primary;
-  font-size: 16px;
+  font-size: 19px;
   font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
@@ -53,6 +54,6 @@
 .actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   flex-shrink: 0;
 }
