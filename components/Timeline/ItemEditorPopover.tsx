@@ -106,6 +106,7 @@ export default function ItemEditorPopover({
             className={styles.input}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+            placeholder="Ex. Sign up 1.0"
             maxLength={80}
             autoFocus
           />

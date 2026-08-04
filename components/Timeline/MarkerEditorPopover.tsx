@@ -85,7 +85,7 @@ export default function MarkerEditorPopover({
         <label className={styles.field}>
           <span className={styles.label}>Type</span>
           <select
-            className={styles.input}
+            className={swatchStyles.select}
             value={type}
             onChange={(e) => setType(e.target.value as MarkerType)}
             autoFocus
