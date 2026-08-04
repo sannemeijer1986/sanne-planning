@@ -64,10 +64,16 @@
   padding: 24px;
   width: 100%;
   max-width: 400px;
+  min-height: 460px;
   display: flex;
   flex-direction: column;
   gap: 16px;
   animation: panelIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+// Confirmation dialogs are short-lived and don't need the form panel's fixed height.
+.confirmPanel {
+  min-height: 0;
 }
 
 .panelClosing {
@@ -169,7 +175,8 @@
   justify-content: space-between;
   align-items: center;
   gap: 8px;
-  margin-top: 4px;
+  margin-top: auto;
+  padding-top: 4px;
 }
 
 .actionsRight {
@@ -201,4 +208,10 @@
 .danger {
   background: transparent;
   color: #f87171;
+}
+
+.dangerFilled {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #ffffff;
 }

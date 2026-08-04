@@ -1,0 +1,60 @@
+@use "@/styles/variables" as vars;
+
+.marker {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.headerMarker {
+  position: absolute;
+  bottom: 0;
+  z-index: 5;
+}
+
+.clickable {
+  cursor: pointer;
+
+  &:hover .label {
+    text-decoration: underline;
+  }
+}
+
+.line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 2px;
+  transform: translateX(-50%);
+  background: currentColor;
+}
+
+.triangle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: translate(-50%, -100%);
+  width: 14px;
+  height: 8px;
+  background: currentColor;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+
+.label {
+  position: absolute;
+  top: -7px;
+  left: 10px;
+  color: currentColor;
+  font-size: 17px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+@each $name, $value in vars.$marker-colors {
+  .color-#{$name} {
+    color: $value;
+  }
+}

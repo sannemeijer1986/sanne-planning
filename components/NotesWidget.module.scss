@@ -32,10 +32,10 @@
 
 .panel {
   width: 440px;
-  height: 400px;
+  max-height: min(70vh, 600px);
   display: flex;
   flex-direction: column;
-  background: vars.$color-bg-panel;
+  background: vars.$color-bg-panel-translucent;
   border: 1px solid vars.$color-border-strong;
   border-radius: 14px;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
@@ -88,7 +88,9 @@
 }
 
 .textarea {
-  flex: 1;
+  min-height: 90px;
+  max-height: 100%;
+  overflow-y: auto;
   resize: none;
   border: none;
   background: transparent;

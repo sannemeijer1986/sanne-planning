@@ -43,6 +43,7 @@ export default function NotesWidget({ editMode }: NotesWidgetProps) {
   const [saved, setSaved] = useState(false);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const savedIndicatorRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { showSnackbar } = useSnackbar();
 
   useEffect(() => {
@@ -52,6 +53,13 @@ export default function NotesWidget({ editMode }: NotesWidgetProps) {
       .catch(() => {})
       .finally(() => setLoaded(true));
   }, []);
+
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (!open || !textarea) return;
+    textarea.style.height = "auto";
+    textarea.style.height = `${textarea.scrollHeight}px`;
+  }, [notes, open]);
 
   function scheduleSave(value: string) {
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
@@ -101,6 +109,7 @@ export default function NotesWidget({ editMode }: NotesWidgetProps) {
             </div>
           </div>
           <textarea
+            ref={textareaRef}
             className={styles.textarea}
             value={notes}
             onChange={(e) => handleChange(e.target.value)}

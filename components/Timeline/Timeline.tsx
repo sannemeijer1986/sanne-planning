@@ -10,7 +10,16 @@ import {
   resolveColumnIndex,
   toISODate,
 } from "@/lib/dates";
-import { QUARTERS_PER_DAY, type ItemColor, type ItemKind, type TimelineItem } from "@/types/planning";
+import {
+  MARKER_TYPE_LABELS,
+  QUARTERS_PER_DAY,
+  type DateMarker,
+  type ItemColor,
+  type ItemKind,
+  type MarkerColor,
+  type MarkerType,
+  type TimelineItem,
+} from "@/types/planning";
 import Header from "@/components/Header";
 import EditModeToggle from "@/components/EditModeToggle";
 import NotesWidget from "@/components/NotesWidget";
@@ -18,9 +27,11 @@ import { useSnackbar } from "@/components/Snackbar/SnackbarProvider";
 import DayColumn from "./DayColumn";
 import MonthLabel from "./MonthLabel";
 import TodayMarker from "./TodayMarker";
+import EventMarker from "./EventMarker";
 import CurrentWeekTint from "./CurrentWeekTint";
 import ItemBlock, { type DragMode } from "./ItemBlock";
 import ItemEditorPopover from "./ItemEditorPopover";
+import MarkerEditorPopover from "./MarkerEditorPopover";
 import itemBlockStyles from "./ItemBlock.module.scss";
 import styles from "./Timeline.module.scss";
 
@@ -71,6 +82,9 @@ interface DragState {
 
 export default function Timeline() {
   const [items, setItems] = useState<TimelineItem[]>([]);
+  const [markers, setMarkers] = useState<DateMarker[]>([]);
+  const [creatingMarkerDate, setCreatingMarkerDate] = useState<string | null>(null);
+  const [editingMarker, setEditingMarker] = useState<DateMarker | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [monthsForward, setMonthsForward] = useState(INITIAL_MONTHS_FORWARD);
   const [dayWidth, setDayWidth] = useState(132);
@@ -130,6 +144,10 @@ export default function Timeline() {
       .then((res) => (res.ok ? res.json() : { items: [] }))
       .then((data) => setItems(data.items ?? []))
       .catch(() => {});
+    fetch("/api/markers")
+      .then((res) => (res.ok ? res.json() : { markers: [] }))
+      .then((data) => setMarkers(data.markers ?? []))
+      .catch(() => {});
     fetch("/api/auth/status")
       .then((res) => (res.ok ? res.json() : { editMode: false }))
       .then((data) => setEditMode(!!data.editMode))
@@ -142,6 +160,11 @@ export default function Timeline() {
   );
   const dayIndex = useMemo(() => buildDayIndex(days), [days]);
   const months = useMemo(() => buildMonthLabels(days), [days]);
+  const markerByDate = useMemo(() => {
+    const map = new Map<string, DateMarker>();
+    markers.forEach((m) => map.set(m.date, m));
+    return map;
+  }, [markers]);
   const todayIndex = useMemo(() => resolveColumnIndex(dayIndex, today), [dayIndex, today]);
   const weekIndices = useMemo(() => currentWeekColumnIndices(dayIndex, today), [dayIndex, today]);
   const weekTint = useMemo(() => {
@@ -422,6 +445,57 @@ export default function Timeline() {
     await fetch(`/api/items/${id}`, { method: "DELETE" });
   }
 
+  function handleDayColumnClick(day: Date) {
+    if (!editMode) {
+      showSnackbar("Can't edit in view mode", { variant: "error" });
+      return;
+    }
+    const iso = toISODate(day);
+    const existing = markerByDate.get(iso);
+    if (existing) {
+      setEditingMarker(existing);
+    } else {
+      setCreatingMarkerDate(iso);
+    }
+  }
+
+  async function handleMarkerCreateSave(values: { type: MarkerType; title: string; color: MarkerColor }) {
+    if (!creatingMarkerDate) return;
+    const date = creatingMarkerDate;
+    setCreatingMarkerDate(null);
+    const res = await fetch("/api/markers", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ date, ...values }),
+    });
+    if (res.ok) {
+      const marker = await res.json();
+      setMarkers((prev) => [...prev, marker]);
+    } else {
+      showSnackbar("Couldn't save marker", { variant: "error" });
+    }
+  }
+
+  async function handleMarkerEditSave(values: { type: MarkerType; title: string; color: MarkerColor }) {
+    if (!editingMarker) return;
+    const id = editingMarker.id;
+    setEditingMarker(null);
+    setMarkers((prev) => prev.map((m) => (m.id === id ? { ...m, ...values } : m)));
+    await fetch(`/api/markers/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(values),
+    }).catch(() => {});
+  }
+
+  async function handleMarkerDelete() {
+    if (!editingMarker) return;
+    const id = editingMarker.id;
+    setEditingMarker(null);
+    setMarkers((prev) => prev.filter((m) => m.id !== id));
+    await fetch(`/api/markers/${id}`, { method: "DELETE" }).catch(() => {});
+  }
+
   async function handleLogin(password: string): Promise<{ ok: boolean; message?: string }> {
     const res = await fetch("/api/auth/login", {
       method: "POST",
@@ -489,9 +563,30 @@ export default function Timeline() {
           </div>
           <div className={styles.dayRow} style={{ width: totalWidth }}>
             {days.map((day, i) => (
-              <DayColumn key={i} date={day} width={dayWidth} />
+              <DayColumn
+                key={i}
+                date={day}
+                width={dayWidth}
+                editable={editMode}
+                onClick={() => handleDayColumnClick(day)}
+              />
             ))}
           </div>
+          {markers.map((marker) => {
+            const idx = dayIndex.get(marker.date);
+            if (idx === undefined) return null;
+            return (
+              <EventMarker
+                key={marker.id}
+                left={idx * dayWidth}
+                top={MONTH_LABEL_HEIGHT}
+                variant="header"
+                label={marker.title || MARKER_TYPE_LABELS[marker.type]}
+                color={marker.color}
+                onClick={editMode ? () => setEditingMarker(marker) : undefined}
+              />
+            );
+          })}
         </div>
 
         <div
@@ -504,6 +599,11 @@ export default function Timeline() {
         >
           {weekTint && <CurrentWeekTint left={weekTint.left} width={weekTint.width} />}
           <TodayMarker left={todayIndex * dayWidth} />
+          {markers.map((marker) => {
+            const idx = dayIndex.get(marker.date);
+            if (idx === undefined) return null;
+            return <EventMarker key={marker.id} left={idx * dayWidth} color={marker.color} />;
+          })}
 
           {renderDayDividers()}
 
@@ -610,6 +710,28 @@ export default function Timeline() {
           onSave={handleEditSave}
           onCancel={() => setEditingItem(null)}
           onDelete={handleDelete}
+        />
+      )}
+
+      {creatingMarkerDate && (
+        <MarkerEditorPopover
+          mode="create"
+          date={creatingMarkerDate}
+          onSave={handleMarkerCreateSave}
+          onCancel={() => setCreatingMarkerDate(null)}
+        />
+      )}
+
+      {editingMarker && (
+        <MarkerEditorPopover
+          mode="edit"
+          date={editingMarker.date}
+          initialType={editingMarker.type}
+          initialTitle={editingMarker.title}
+          initialColor={editingMarker.color}
+          onSave={handleMarkerEditSave}
+          onCancel={() => setEditingMarker(null)}
+          onDelete={handleMarkerDelete}
         />
       )}
     </div>

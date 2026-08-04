@@ -39,9 +39,37 @@ export interface TimelineItem {
   updatedAt: string;
 }
 
+// Point-in-time markers (e.g. deadlines) shown as a vertical divider on a
+// single day, styled like the "Today" marker. One type today, more later.
+export const MARKER_TYPES = ["deadline"] as const;
+export type MarkerType = (typeof MARKER_TYPES)[number];
+
+export const MARKER_TYPE_LABELS: Record<MarkerType, string> = {
+  deadline: "Deadline",
+};
+
+// Smaller, pastel-toned palette kept distinct from ITEM_COLORS for contrast
+// against the dark background.
+export const MARKER_COLORS = ["blue", "pink", "green", "gold"] as const;
+export type MarkerColor = (typeof MARKER_COLORS)[number];
+
+export interface DateMarker {
+  id: string;
+  date: string; // ISO yyyy-MM-dd
+  type: MarkerType;
+  title: string; // shown next to the line instead of the type label; falls back to it when empty
+  color: MarkerColor;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CreateMarkerInput = Pick<DateMarker, "date" | "type" | "title" | "color">;
+export type UpdateMarkerInput = Partial<Pick<DateMarker, "type" | "title" | "color">>;
+
 export interface PlanningData {
   items: TimelineItem[];
   notes?: string;
+  markers?: DateMarker[];
 }
 
 export const NOTES_MAX_LENGTH = 4000;

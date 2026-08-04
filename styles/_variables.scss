@@ -3,6 +3,7 @@
 // Neutrals
 $color-bg-page: #09090b;
 $color-bg-panel: #18181b;
+$color-bg-panel-translucent: rgba(24, 24, 27, 0.8); // same as $color-bg-panel, 80% opacity
 $color-bg-elevated: #212124; // day-of-week header row, slightly lighter than the panel
 $color-border-subtle: rgba(255, 255, 255, 0.08);
 $color-border-strong: rgba(255, 255, 255, 0.16);
@@ -69,6 +70,15 @@ $item-colors: (
     bg: #0f766e,
     border: #14b8a6,
   ),
+);
+
+// Date marker palette (deadlines etc.) — pastel tones for contrast against
+// the dark background, kept deliberately smaller than the item palette.
+$marker-colors: (
+  "blue": #93c5fd,
+  "pink": #f9a8d4,
+  "green": #86efac,
+  "gold": #fde68a,
 );
 
 // Layout

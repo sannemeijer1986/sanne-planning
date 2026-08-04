@@ -3,50 +3,43 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import { parseISODate } from "@/lib/dates";
-import { COLOR_SWATCHES } from "@/lib/colors";
-import type { ItemColor, ItemKind } from "@/types/planning";
+import { MARKER_COLOR_SWATCHES } from "@/lib/colors";
+import { MARKER_TYPES, MARKER_TYPE_LABELS, type MarkerColor, type MarkerType } from "@/types/planning";
 import ConfirmDialog from "./ConfirmDialog";
 import styles from "./ItemEditorPopover.module.scss";
+import swatchStyles from "./MarkerEditorPopover.module.scss";
 
 // Matches the exit animation duration in ItemEditorPopover.module.scss.
 const CLOSE_ANIMATION_MS = 150;
 
-interface ItemEditorPopoverProps {
+interface MarkerEditorPopoverProps {
   mode: "create" | "edit";
-  startDate: string;
-  endDate: string;
-  initialKind?: ItemKind;
+  date: string;
+  initialType?: MarkerType;
   initialTitle?: string;
-  initialSubtitle?: string;
-  initialColor?: ItemColor;
-  onSave: (values: { kind: ItemKind; title: string; subtitle: string; color: ItemColor }) => void;
+  initialColor?: MarkerColor;
+  onSave: (values: { type: MarkerType; title: string; color: MarkerColor }) => void;
   onCancel: () => void;
   onDelete?: () => void;
 }
 
-export default function ItemEditorPopover({
+export default function MarkerEditorPopover({
   mode,
-  startDate,
-  endDate,
-  initialKind = "work",
+  date,
+  initialType = "deadline",
   initialTitle = "",
-  initialSubtitle = "",
   initialColor = "blue",
   onSave,
   onCancel,
   onDelete,
-}: ItemEditorPopoverProps) {
-  const [kind, setKind] = useState<ItemKind>(initialKind);
+}: MarkerEditorPopoverProps) {
+  const [type, setType] = useState<MarkerType>(initialType);
   const [title, setTitle] = useState(initialTitle);
-  const [subtitle, setSubtitle] = useState(initialSubtitle);
-  const [color, setColor] = useState<ItemColor>(initialColor);
+  const [color, setColor] = useState<MarkerColor>(initialColor);
   const [closing, setClosing] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
-  const dateRangeLabel =
-    startDate === endDate
-      ? format(parseISODate(startDate), "EEE, MMM d")
-      : `${format(parseISODate(startDate), "EEE, MMM d")} – ${format(parseISODate(endDate), "EEE, MMM d")}`;
+  const dateLabel = format(parseISODate(date), "EEE, MMM d");
 
   function close(action: () => void) {
     setClosing(true);
@@ -54,10 +47,7 @@ export default function ItemEditorPopover({
   }
 
   function handleSave() {
-    const finalTitle = title.trim();
-    const finalSubtitle = subtitle.trim() || (kind === "leave" ? "On leave" : "");
-    if (!finalTitle && !finalSubtitle) return;
-    close(() => onSave({ kind, title: finalTitle, subtitle: finalSubtitle, color }));
+    close(() => onSave({ type, title: title.trim(), color }));
   }
 
   function handleCancel() {
@@ -81,59 +71,47 @@ export default function ItemEditorPopover({
         className={`${styles.panel} ${closing ? styles.panelClosing : ""}`}
         onClick={(e) => e.stopPropagation()}
       >
-        <span className={styles.dates}>{dateRangeLabel}</span>
-
-        <div className={styles.kindToggle}>
-          <button
-            type="button"
-            className={`${styles.kindOption} ${kind === "work" ? styles.kindSelected : ""}`}
-            onClick={() => setKind("work")}
-          >
-            Work
-          </button>
-          <button
-            type="button"
-            className={`${styles.kindOption} ${kind === "leave" ? styles.kindSelectedLeave : ""}`}
-            onClick={() => setKind("leave")}
-          >
-            On leave
-          </button>
-        </div>
+        <span className={styles.dates}>{dateLabel}</span>
 
         <label className={styles.field}>
-          <span className={styles.label}>Label</span>
-          <input
+          <span className={styles.label}>Type</span>
+          <select
             className={styles.input}
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            maxLength={80}
+            value={type}
+            onChange={(e) => setType(e.target.value as MarkerType)}
             autoFocus
-          />
+          >
+            {MARKER_TYPES.map((t) => (
+              <option key={t} value={t}>
+                {MARKER_TYPE_LABELS[t]}
+              </option>
+            ))}
+          </select>
         </label>
 
         <label className={styles.field}>
           <span className={styles.label}>Title</span>
           <input
             className={styles.input}
-            value={subtitle}
-            onChange={(e) => setSubtitle(e.target.value)}
-            placeholder={kind === "leave" ? "On leave" : ""}
-            maxLength={120}
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder={MARKER_TYPE_LABELS[type]}
+            maxLength={80}
           />
         </label>
 
-        <div className={`${styles.field} ${kind !== "work" ? styles.fieldHidden : ""}`}>
+        <div className={styles.field}>
           <span className={styles.label}>Color</span>
           <div className={styles.swatches}>
-            {COLOR_SWATCHES.map((swatch) => (
+            {MARKER_COLOR_SWATCHES.map((swatch) => (
               <button
                 key={swatch.value}
                 type="button"
                 aria-label={swatch.label}
                 className={[
-                  styles.swatch,
-                  styles[`color-${swatch.value}`],
-                  color === swatch.value ? styles.selected : "",
+                  swatchStyles.swatch,
+                  swatchStyles[`color-${swatch.value}`],
+                  color === swatch.value ? swatchStyles.selected : "",
                 ].join(" ")}
                 onClick={() => setColor(swatch.value)}
               />
@@ -160,7 +138,7 @@ export default function ItemEditorPopover({
 
       {confirmingDelete && (
         <ConfirmDialog
-          message="Delete this item? This can't be undone."
+          message="Delete this marker? This can't be undone."
           onConfirm={handleDelete}
           onCancel={() => setConfirmingDelete(false)}
         />
