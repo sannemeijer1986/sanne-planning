@@ -106,7 +106,7 @@ export default function ItemEditorPopover({
             className={styles.input}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder={kind === "leave" ? "On leave" : "Ex. Add bank 1.6"}
+            placeholder={kind === "leave" ? "Ex. On leave" : "Ex. Add bank 1.6"}
             maxLength={80}
             autoFocus
           />
@@ -118,7 +118,7 @@ export default function ItemEditorPopover({
             className={styles.input}
             value={subtitle}
             onChange={(e) => setSubtitle(e.target.value)}
-            placeholder={kind === "leave" ? "Dentist" : "Ex. Figma handoff"}
+            placeholder={kind === "leave" ? "Ex. Dentist" : "Ex. Figma handoff"}
             maxLength={120}
           />
         </label>
