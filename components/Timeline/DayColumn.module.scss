@@ -19,6 +19,10 @@
   }
 }
 
+.viewOnly {
+  cursor: not-allowed;
+}
+
 .weekday {
   color: vars.$color-text-muted;
   font-size: 13px;

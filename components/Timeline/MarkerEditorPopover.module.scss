@@ -17,3 +17,30 @@
     background-color: $value;
   }
 }
+
+.quarterToggle {
+  display: flex;
+  gap: 4px;
+  background: vars.$color-bg-page;
+  border: 1px solid vars.$color-border-strong;
+  border-radius: 8px;
+  padding: 3px;
+}
+
+.quarterOption {
+  flex: 1;
+  padding: 8px 4px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: vars.$color-text-muted;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.quarterSelected {
+  background: vars.$color-bg-panel;
+  color: vars.$color-text-primary;
+}

@@ -4,7 +4,13 @@ import { useState } from "react";
 import { format } from "date-fns";
 import { parseISODate } from "@/lib/dates";
 import { MARKER_COLOR_SWATCHES } from "@/lib/colors";
-import { MARKER_TYPES, MARKER_TYPE_LABELS, type MarkerColor, type MarkerType } from "@/types/planning";
+import {
+  MARKER_QUARTER_LABELS,
+  MARKER_TYPES,
+  MARKER_TYPE_LABELS,
+  type MarkerColor,
+  type MarkerType,
+} from "@/types/planning";
 import ConfirmDialog from "./ConfirmDialog";
 import styles from "./ItemEditorPopover.module.scss";
 import swatchStyles from "./MarkerEditorPopover.module.scss";
@@ -15,10 +21,11 @@ const CLOSE_ANIMATION_MS = 150;
 interface MarkerEditorPopoverProps {
   mode: "create" | "edit";
   date: string;
+  initialOffset?: number;
   initialType?: MarkerType;
   initialTitle?: string;
   initialColor?: MarkerColor;
-  onSave: (values: { type: MarkerType; title: string; color: MarkerColor }) => void;
+  onSave: (values: { offset: number; type: MarkerType; title: string; color: MarkerColor }) => void;
   onCancel: () => void;
   onDelete?: () => void;
 }
@@ -26,6 +33,7 @@ interface MarkerEditorPopoverProps {
 export default function MarkerEditorPopover({
   mode,
   date,
+  initialOffset = 0,
   initialType = "deadline",
   initialTitle = "",
   initialColor = "blue",
@@ -33,6 +41,7 @@ export default function MarkerEditorPopover({
   onCancel,
   onDelete,
 }: MarkerEditorPopoverProps) {
+  const [offset, setOffset] = useState(initialOffset);
   const [type, setType] = useState<MarkerType>(initialType);
   const [title, setTitle] = useState(initialTitle);
   const [color, setColor] = useState<MarkerColor>(initialColor);
@@ -47,7 +56,7 @@ export default function MarkerEditorPopover({
   }
 
   function handleSave() {
-    close(() => onSave({ type, title: title.trim(), color }));
+    close(() => onSave({ offset, type, title: title.trim(), color }));
   }
 
   function handleCancel() {
@@ -88,6 +97,22 @@ export default function MarkerEditorPopover({
             ))}
           </select>
         </label>
+
+        <div className={styles.field}>
+          <span className={styles.label}>Time of day</span>
+          <div className={swatchStyles.quarterToggle}>
+            {MARKER_QUARTER_LABELS.map((label, i) => (
+              <button
+                key={label}
+                type="button"
+                className={`${swatchStyles.quarterOption} ${offset === i ? swatchStyles.quarterSelected : ""}`}
+                onClick={() => setOffset(i)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
 
         <label className={styles.field}>
           <span className={styles.label}>Title</span>

@@ -47,7 +47,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 8px 10px 14px;
+  padding: 16px 16px 14px 20px;
   border-bottom: 1px solid vars.$color-border-subtle;
 }
 
@@ -98,7 +98,7 @@
   font: inherit;
   font-size: 18px;
   line-height: 1.4;
-  padding: 12px 14px;
+  padding: 18px 20px;
   cursor: text;
 
   &:focus {

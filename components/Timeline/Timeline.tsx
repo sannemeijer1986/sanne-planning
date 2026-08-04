@@ -160,11 +160,6 @@ export default function Timeline() {
   );
   const dayIndex = useMemo(() => buildDayIndex(days), [days]);
   const months = useMemo(() => buildMonthLabels(days), [days]);
-  const markerByDate = useMemo(() => {
-    const map = new Map<string, DateMarker>();
-    markers.forEach((m) => map.set(m.date, m));
-    return map;
-  }, [markers]);
   const todayIndex = useMemo(() => resolveColumnIndex(dayIndex, today), [dayIndex, today]);
   const weekIndices = useMemo(() => currentWeekColumnIndices(dayIndex, today), [dayIndex, today]);
   const weekTint = useMemo(() => {
@@ -450,16 +445,15 @@ export default function Timeline() {
       showSnackbar("Can't edit in view mode", { variant: "error" });
       return;
     }
-    const iso = toISODate(day);
-    const existing = markerByDate.get(iso);
-    if (existing) {
-      setEditingMarker(existing);
-    } else {
-      setCreatingMarkerDate(iso);
-    }
+    setCreatingMarkerDate(toISODate(day));
   }
 
-  async function handleMarkerCreateSave(values: { type: MarkerType; title: string; color: MarkerColor }) {
+  async function handleMarkerCreateSave(values: {
+    offset: number;
+    type: MarkerType;
+    title: string;
+    color: MarkerColor;
+  }) {
     if (!creatingMarkerDate) return;
     const date = creatingMarkerDate;
     setCreatingMarkerDate(null);
@@ -476,7 +470,12 @@ export default function Timeline() {
     }
   }
 
-  async function handleMarkerEditSave(values: { type: MarkerType; title: string; color: MarkerColor }) {
+  async function handleMarkerEditSave(values: {
+    offset: number;
+    type: MarkerType;
+    title: string;
+    color: MarkerColor;
+  }) {
     if (!editingMarker) return;
     const id = editingMarker.id;
     setEditingMarker(null);
@@ -578,7 +577,7 @@ export default function Timeline() {
             return (
               <EventMarker
                 key={marker.id}
-                left={idx * dayWidth}
+                left={idx * dayWidth + (marker.offset ?? 0) * quarterWidth}
                 top={MONTH_LABEL_HEIGHT}
                 variant="header"
                 label={marker.title || MARKER_TYPE_LABELS[marker.type]}
@@ -602,7 +601,13 @@ export default function Timeline() {
           {markers.map((marker) => {
             const idx = dayIndex.get(marker.date);
             if (idx === undefined) return null;
-            return <EventMarker key={marker.id} left={idx * dayWidth} color={marker.color} />;
+            return (
+              <EventMarker
+                key={marker.id}
+                left={idx * dayWidth + (marker.offset ?? 0) * quarterWidth}
+                color={marker.color}
+              />
+            );
           })}
 
           {renderDayDividers()}
@@ -726,6 +731,7 @@ export default function Timeline() {
         <MarkerEditorPopover
           mode="edit"
           date={editingMarker.date}
+          initialOffset={editingMarker.offset}
           initialType={editingMarker.type}
           initialTitle={editingMarker.title}
           initialColor={editingMarker.color}

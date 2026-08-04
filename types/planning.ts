@@ -53,9 +53,13 @@ export const MARKER_TYPE_LABELS: Record<MarkerType, string> = {
 export const MARKER_COLORS = ["blue", "pink", "green", "gold"] as const;
 export type MarkerColor = (typeof MARKER_COLORS)[number];
 
+// Same quarter-day granularity as item startOffset/endOffset (see QUARTERS_PER_DAY).
+export const MARKER_QUARTER_LABELS = ["Morning", "Noon", "Afternoon", "Evening"] as const;
+
 export interface DateMarker {
   id: string;
   date: string; // ISO yyyy-MM-dd
+  offset: number; // 0-3, quarter of the day — see MARKER_QUARTER_LABELS
   type: MarkerType;
   title: string; // shown next to the line instead of the type label; falls back to it when empty
   color: MarkerColor;
@@ -63,8 +67,8 @@ export interface DateMarker {
   updatedAt: string;
 }
 
-export type CreateMarkerInput = Pick<DateMarker, "date" | "type" | "title" | "color">;
-export type UpdateMarkerInput = Partial<Pick<DateMarker, "type" | "title" | "color">>;
+export type CreateMarkerInput = Pick<DateMarker, "date" | "offset" | "type" | "title" | "color">;
+export type UpdateMarkerInput = Partial<Pick<DateMarker, "offset" | "type" | "title" | "color">>;
 
 export interface PlanningData {
   items: TimelineItem[];

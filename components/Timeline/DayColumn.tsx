@@ -11,7 +11,7 @@ interface DayColumnProps {
 export default function DayColumn({ date, width, editable, onClick }: DayColumnProps) {
   return (
     <div
-      className={`${styles.column} ${editable ? styles.editable : ""}`}
+      className={`${styles.column} ${editable ? styles.editable : styles.viewOnly}`}
       style={{ width }}
       onClick={onClick}
     >
