@@ -12,7 +12,12 @@
   align-items: center;
   justify-content: center;
   padding: 0 12px;
-  overflow: hidden;
+  // visible (not hidden): the resize handles extend slightly past the border
+  // via a negative offset (see .handleLeft/.handleRight) to cover the full
+  // visible edge, including the border strip itself — hidden would clip that.
+  // Title/subtitle already truncate themselves, so nothing here relies on
+  // the parent clipping overflow.
+  overflow: visible;
   user-select: none;
   z-index: 1;
   box-sizing: border-box;
@@ -126,11 +131,13 @@
 }
 
 .handleLeft {
-  left: 0;
+  // Offset by the item's border-width: absolutely positioned children sit at
+  // the padding edge, so left:0 alone leaves the 2px border showing "move".
+  left: -2px;
 }
 
 .handleRight {
-  right: 0;
+  right: -2px;
 }
 
 @each $name, $pair in vars.$item-colors {
