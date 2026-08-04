@@ -22,6 +22,7 @@ interface ItemEditorPopoverProps {
   onSave: (values: { kind: ItemKind; title: string; subtitle: string; color: ItemColor }) => void;
   onCancel: () => void;
   onDelete?: () => void;
+  onDuplicate?: () => void;
 }
 
 export default function ItemEditorPopover({
@@ -35,6 +36,7 @@ export default function ItemEditorPopover({
   onSave,
   onCancel,
   onDelete,
+  onDuplicate,
 }: ItemEditorPopoverProps) {
   const [kind, setKind] = useState<ItemKind>(initialKind);
   const [title, setTitle] = useState(initialTitle);
@@ -70,6 +72,10 @@ export default function ItemEditorPopover({
 
   function handleDeleteRequest() {
     setConfirmingDelete(true);
+  }
+
+  function handleDuplicate() {
+    if (onDuplicate) close(onDuplicate);
   }
 
   return (
@@ -141,6 +147,16 @@ export default function ItemEditorPopover({
             ))}
           </div>
         </div>
+
+        {mode === "edit" && kind === "work" && onDuplicate && (
+          <button
+            type="button"
+            className={`${styles.button} ${styles.secondary} ${styles.duplicateButton}`}
+            onClick={handleDuplicate}
+          >
+            Duplicate
+          </button>
+        )}
 
         <div className={styles.actions}>
           {mode === "edit" && onDelete && (

@@ -440,6 +440,35 @@ export default function Timeline() {
     await fetch(`/api/items/${id}`, { method: "DELETE" });
   }
 
+  async function handleDuplicate() {
+    if (!editingItem) return;
+    const { kind, startDate, startOffset, endDate, endOffset, lane, title, subtitle, color } = editingItem;
+    setEditingItem(null);
+    const res = await fetch("/api/items", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        // Legacy items predating the "kind" field default to "work".
+        kind: kind ?? "work",
+        startDate,
+        // Legacy items predating quarter-day snapping have no offset fields; default to full-day.
+        startOffset: startOffset ?? 0,
+        endDate,
+        endOffset: endOffset ?? QUARTERS_PER_DAY - 1,
+        lane: lane + 1,
+        title,
+        subtitle,
+        color,
+      }),
+    });
+    if (res.ok) {
+      const item = await res.json();
+      setItems((prev) => [...prev, item]);
+    } else {
+      showSnackbar("Couldn't duplicate item", { variant: "error" });
+    }
+  }
+
   function handleDayColumnClick(day: Date) {
     if (!editMode) {
       showSnackbar("Can't edit in view mode", { variant: "error" });
@@ -715,6 +744,7 @@ export default function Timeline() {
           onSave={handleEditSave}
           onCancel={() => setEditingItem(null)}
           onDelete={handleDelete}
+          onDuplicate={handleDuplicate}
         />
       )}
 

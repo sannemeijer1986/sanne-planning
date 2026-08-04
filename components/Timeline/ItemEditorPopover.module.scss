@@ -64,7 +64,7 @@
   padding: 24px;
   width: 100%;
   max-width: 400px;
-  min-height: 460px;
+  min-height: 500px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -213,6 +213,10 @@
   background: transparent;
   border-color: vars.$color-border-strong;
   color: vars.$color-text-primary;
+}
+
+.duplicateButton {
+  width: 100%;
 }
 
 .danger {
