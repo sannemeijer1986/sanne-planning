@@ -13,7 +13,7 @@ export default function Header({ children }: HeaderProps) {
         <img src="/avatar_sanne.png" alt="Sanne" width={48} height={48} className={styles.avatar} />
         <div className={styles.text}>
           <span className={styles.eyebrow}>Sanne</span>
-          <span className={styles.title}>XREX - Design planning</span>
+          <span className={styles.title}>XREX · Design planning</span>
         </div>
       </div>
       <div className={styles.actions}>{children}</div>

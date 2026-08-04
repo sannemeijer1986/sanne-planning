@@ -27,9 +27,15 @@
   top: 0;
   bottom: 0;
   left: 0;
-  width: 0;
+  width: 1.5px;
   transform: translateX(-50%);
-  border-left: 2px dashed currentColor;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    currentColor 0,
+    currentColor 4px,
+    transparent 4px,
+    transparent 12px
+  );
 }
 
 .triangle {
@@ -37,19 +43,19 @@
   top: 0;
   left: 0;
   transform: translate(-50%, -100%);
-  width: 14px;
-  height: 8px;
+  width: 10px;
+  height: 6px;
   background: currentColor;
   clip-path: polygon(0 0, 100% 0, 50% 100%);
 }
 
 .label {
   position: absolute;
-  top: -7px;
-  left: 10px;
+  top: -6px;
+  left: 8px;
   color: currentColor;
-  font-size: 17px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 600;
   white-space: nowrap;
 }
 

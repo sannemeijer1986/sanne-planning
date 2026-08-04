@@ -9,7 +9,7 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Sanne — Planning",
+  title: "XREX · Design planning",
   description: "Design planning timeline",
 };
 
