@@ -90,8 +90,22 @@ export default function Timeline() {
   const bodyRef = useRef<HTMLDivElement>(null);
   const dragStateRef = useRef<DragState | null>(null);
   const hasScrolledRef = useRef(false);
-  const today = useMemo(() => new Date(), []);
+  const [today, setToday] = useState(() => new Date());
   const { showSnackbar } = useSnackbar();
+
+  useEffect(() => {
+    function refreshToday() {
+      setToday(new Date());
+    }
+    const interval = setInterval(refreshToday, 60 * 1000);
+    document.addEventListener("visibilitychange", refreshToday);
+    window.addEventListener("focus", refreshToday);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", refreshToday);
+      window.removeEventListener("focus", refreshToday);
+    };
+  }, []);
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 640px)");
