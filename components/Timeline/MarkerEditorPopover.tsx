@@ -120,7 +120,7 @@ export default function MarkerEditorPopover({
             className={styles.input}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder={MARKER_TYPE_LABELS[type]}
+            placeholder="Ex. DCA handoff"
             maxLength={80}
           />
         </label>
@@ -163,7 +163,7 @@ export default function MarkerEditorPopover({
 
       {confirmingDelete && (
         <ConfirmDialog
-          message="Delete this marker? This can't be undone."
+          message="Are you sure you want to delete this marker? This can't be undone."
           onConfirm={handleDelete}
           onCancel={() => setConfirmingDelete(false)}
         />

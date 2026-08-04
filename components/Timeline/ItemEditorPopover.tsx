@@ -106,7 +106,7 @@ export default function ItemEditorPopover({
             className={styles.input}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Ex. Sign up 1.0"
+            placeholder="Ex. Add bank 1.6"
             maxLength={80}
             autoFocus
           />
@@ -118,7 +118,7 @@ export default function ItemEditorPopover({
             className={styles.input}
             value={subtitle}
             onChange={(e) => setSubtitle(e.target.value)}
-            placeholder={kind === "leave" ? "On leave" : ""}
+            placeholder={kind === "leave" ? "On leave" : "Ex. Figma handoff"}
             maxLength={120}
           />
         </label>
@@ -161,7 +161,7 @@ export default function ItemEditorPopover({
 
       {confirmingDelete && (
         <ConfirmDialog
-          message="Delete this item? This can't be undone."
+          message="Are you sure you want to delete this item? This can't be undone."
           onConfirm={handleDelete}
           onCancel={() => setConfirmingDelete(false)}
         />
